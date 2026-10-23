@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Strike Zone</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:Verdana,Tahoma,sans-serif;color:#e8e2c8;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas{display:block}
+#hud{position:fixed;inset:0;pointer-events:none}
+#cross{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%)}
+#cross:before,#cross:after{content:"";position:absolute;background:#7f7;}
+#cross:before{left:10px;top:0;width:2px;height:22px}#cross:after{top:10px;left:0;height:2px;width:22px}
+.bar{position:absolute;bottom:14px;font-size:22px;font-weight:bold;color:#f0c050;text-shadow:1px 1px 2px #000}
+#hp{left:16px}#ammo{right:16px}#money{left:16px;bottom:46px;color:#7f7;font-size:18px}
+#top{position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:18px;text-align:center;text-shadow:1px 1px 2px #000;background:rgba(0,0,0,.35);padding:4px 14px;border-radius:6px}
+#msg{position:absolute;top:28%;width:100%;text-align:center;font-size:28px;font-weight:bold;text-shadow:2px 2px 4px #000}
+#prog{position:absolute;top:60%;left:50%;width:220px;height:12px;transform:translateX(-50%);border:2px solid #fff;display:none}
+#prog div{height:100%;background:#f0c050;width:0}
+#kill{position:absolute;top:50px;right:12px;font-size:13px;text-align:right}
+#dmg{position:absolute;inset:0;background:radial-gradient(transparent 50%,rgba(255,0,0,.6));opacity:0;transition:opacity .3s}
+.panel{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,12,8,.88);text-align:center;padding:16px}
+.panel h1{font-size:40px;margin:0 0 6px;color:#f0c050;letter-spacing:3px}
+.panel p{margin:4px;font-size:14px;max-width:520px}
+.btn{pointer-events:auto;font-family:inherit;font-size:16px;padding:10px 18px;margin:5px;border:2px solid #f0c050;background:#2b2a1c;color:#f0c050;border-radius:4px;cursor:pointer;min-width:200px}
+.btn:disabled{opacity:.35}
+.hide{display:none!important}
+#touch{position:fixed;inset:0;display:none}
+.tbtn{position:absolute;width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;color:#fff}
+#tFire{right:24px;bottom:110px;width:88px;height:88px;background:rgba(220,60,40,.35)}
+#tJump{right:130px;bottom:40px}#tUse{right:24px;bottom:220px}#tRel{right:130px;bottom:140px}#tBuy{left:16px;top:60px;width:56px;height:56px;font-size:11px}
+#joy{position:absolute;left:30px;bottom:40px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.35)}
+#knob{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.45)}
+</style>
+</head>
+<body>
+<div id="hud" class="hide">
+  <div id="cross"></div><div id="dmg"></div>
+  <div id="top"></div><div id="msg"></div><div id="kill"></div>
+  <div id="prog"><div></div></div>
+  <div id="money" class="bar"></div><div id="hp" class="bar"></div><div id="ammo" class="bar"></div>
+</div>
+<div id="touch">
+  <div id="joy"><div id="knob"></div></div>
+  <div class="tbtn" id="tFire">FIRE</div><div class="tbtn" id="tJump">JUMP</div>
+  <div class="tbtn" id="tUse">BOM</div><div class="tbtn" id="tRel">RELOAD</div><div class="tbtn" id="tBuy">BELI</div>
+</div>
+<div id="menu" class="panel">
+  <h1>STRIKE ZONE</h1>
+  <p>Kamu tim <b>Penyerang</b>. Pasang bom di zona <b style="color:#f55">A</b> atau habisi semua <b>Penjaga</b>. Ronde pertama yang mencapai 8 kemenangan juara.</p>
+  <p>PC: WASD gerak · Mouse bidik · Klik tembak · Spasi lompat · R reload · E (tahan) pasang bom · B beli · 1/2 ganti senjata</p>
+  <p>HP: joystick kiri gerak · geser layar kanan bidik · tombol FIRE/JUMP/BOM</p>
+  <button class="btn" id="start">MULAI</button>
+</div>
+<div id="buy" class="panel hide">
+  <h1>BELI</h1><p id="buyMoney"></p><div id="buyList"></div>
+  <button class="btn" id="buyClose">TUTUP (B)</button>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const isTouch='ontouchstart' in window;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x9cc4e4);scene.fog=new THREE.Fog(0x9cc4e4,30,90);
+const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.05,200);
+const renderer=new THREE.WebGLRenderer({antialias:!isTouch});renderer.setPixelRatio(Math.min(devicePixelRatio,isTouch?1.5:2));
+renderer.setSize(innerWidth,innerHeight);document.body.prepend(renderer.domElement);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+scene.add(new THREE.HemisphereLight(0xffffff,0x665533,0.75));
+const sun=new THREE.DirectionalLight(0xfff2d0,0.7);sun.position.set(20,40,10);scene.add(sun);
+
+// ---- textures (procedural)
+function tex(c1,c2,lines){const cv=document.createElement('canvas');cv.width=cv.height=64;const g=cv.getContext('2d');g.fillStyle=c1;g.fillRect(0,0,64,64);
+  for(let i=0;i<300;i++){g.fillStyle=Math.random()<.5?c2:c1;g.globalAlpha=.25;g.fillRect(Math.random()*64,Math.random()*64,2,2)}g.globalAlpha=1;
+  if(lines){g.strokeStyle=c2;g.lineWidth=2;for(let y=0;y<64;y+=16){g.beginPath();g.moveTo(0,y);g.lineTo(64,y);g.stroke();const o=(y/16)%2?0:32;for(let x=o;x<64;x+=32){g.beginPath();g.moveTo(x,y);g.lineTo(x,y+16);g.stroke()}}}
+  const t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.magFilter=THREE.NearestFilter;return t}
+const T={sand:tex('#c9b07a','#a88f5c'),wall:tex('#d8c79a','#9b8a60',true),crate:tex('#8a6a3a','#5a4220',true),dark:tex('#7a7060','#555044',true)};
+function mat(t,rx,ry){const m=new THREE.MeshLambertMaterial({map:t.clone()});m.map.needsUpdate=true;m.map.repeat.set(rx,ry);return m}
+
+// ---- map: walls as AABB [x,z,w,d,h,type]
+const walls=[],wallMeshes=[];
+function box(x,z,w,d,h,t='wall'){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(T[t],Math.max(1,w/2),Math.max(1,h/2)));m.position.set(x,h/2,z);scene.add(m);wallMeshes.push(m);walls.push({x1:x-w/2,x2:x+w/2,z1:z-d/2,z2:z+d/2,h})}
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(80,80),mat(T.sand,20,20));floor.rotation.x=-Math.PI/2;scene.add(floor);wallMeshes.push(floor);
+// outer
+box(0,-40,80,1,6);box(0,40,80,1,6);box(-40,0,1,80,6);box(40,0,1,80,6);
+// layout
+box(-14,-20,1,24,5);box(14,-20,1,24,5);   // mid corridor walls
+box(-27,-8,26,1,5);box(27,-8,26,1,5);
+box(-14,12,1,20,5);box(14,12,1,20,5);
+box(0,6,10,1,5,'dark');box(-27,22,26,1,5);box(27,22,26,1,5);
+box(0,22,8,1,5,'dark');
+// crates
+[[ -24,-26],[ -22,-26],[ -23,-24],[24,-27],[30,-14],[-30,-14],[-4,-14],[5,-26],[22,30],[-24,32],[-8,30],[8,14],[-30,4],[30,4]].forEach(([x,z])=>box(x,z,2,2,2,'crate'));
+box(26,30,6,2,1.2,'crate');
+// bomb site A
+const SITE={x:-26,z:-30,r:5};
+const siteMark=new THREE.Mesh(new THREE.CircleGeometry(SITE.r,32),new THREE.MeshBasicMaterial({color:0xcc2222,transparent:true,opacity:.25}));
+siteMark.rotation.x=-Math.PI/2;siteMark.position.set(SITE.x,0.02,SITE.z);scene.add(siteMark);
+(function(){const cv=document.createElement('canvas');cv.width=cv.height=128;const g=cv.getContext('2d');g.fillStyle='#c22';g.font='bold 100px Verdana';g.textAlign='center';g.fillText('A',64,100);
+  const s=new THREE.Mesh(new THREE.PlaneGeometry(3,3),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv),transparent:true}));s.position.set(-26,3.5,-39.4);scene.add(s)})();
+
+const SPAWN_T={x:0,z:34},SPAWN_CT=[[-26,-24],[-20,-32],[0,-30],[22,-30],[0,-14]];
+const PATROL=[[-26,-30],[-20,-20],[0,-30],[0,-14],[0,0],[-26,0],[26,0],[26,-20],[-26,14],[26,14],[0,30],[-20,30],[20,30]];
+
+function collide(p,r){for(const w of walls){if(p.y>=w.h)continue;const cx=Math.max(w.x1,Math.min(p.x,w.x2)),cz=Math.max(w.z1,Math.min(p.z,w.z2));
+  const dx=p.x-cx,dz=p.z-cz,d2=dx*dx+dz*dz;if(d2<r*r){const d=Math.sqrt(d2)||0.0001;if(d2===0){p.x+=r}else{p.x+=dx/d*(r-d);p.z+=dz/d*(r-d)}}}}
+const ray=new THREE.Raycaster();
+function losClear(a,b){const dir=new THREE.Vector3().subVectors(b,a);const dist=dir.length();dir.normalize();ray.set(a,dir);ray.far=dist;return ray.intersectObjects(wallMeshes).length===0}
+
+// ---- weapons
+const WEAPONS={
+  pistol:{name:'Pistol P9',dmg:28,rate:.22,mag:12,reserve:48,spread:.012,price:0,auto:false,slot:2},
+  smg:{name:'SMG Vex',dmg:20,rate:.075,mag:30,reserve:120,spread:.03,price:1300,auto:true,slot:1},
+  rifle:{name:'Rifle K47',dmg:35,rate:.1,mag:30,reserve:90,spread:.02,price:2700,auto:true,slot:1},
+  sniper:{name:'Sniper Longbow',dmg:110,rate:1.2,mag:5,reserve:20,spread:.002,price:4500,auto:false,slot:1}
+};
+const ARMOR_PRICE=650;
+
+// gun model
+const gun=new THREE.Group();const gm=new THREE.MeshLambertMaterial({color:0x222222}),gw=new THREE.MeshLambertMaterial({color:0x6b4a2b});
+const g1=new THREE.Mesh(new THREE.BoxGeometry(.08,.1,.6),gm);g1.position.set(0,0,-.2);gun.add(g1);
+const g2=new THREE.Mesh(new THREE.BoxGeometry(.07,.16,.08),gw);g2.position.set(0,-.1,-.02);gun.add(g2);
+const flash=new THREE.Mesh(new THREE.SphereGeometry(.06,6,6),new THREE.MeshBasicMaterial({color:0xffdd66}));flash.position.set(0,0,-.55);flash.visible=false;gun.add(flash);
+gun.position.set(.22,-.2,-.35);camera.add(gun);scene.add(camera);
+
+// ---- player
+const P={pos:new THREE.Vector3(),vy:0,yaw:0,pitch:0,hp:100,armor:0,money:800,alive:true,
+  slots:{1:null,2:{type:'pistol',mag:12,res:48}},cur:2,cd:0,reload:0,kills:0};
+function wep(){return P.slots[P.cur]}
+// ---- bots
+const bots=[];
+function makeBot(x,z,i){const g=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.BoxGeometry(.6,1.1,.35),new THREE.MeshLambertMaterial({color:0x2f4f7f}));body.position.y=1.05;g.add(body);
+  const head=new THREE.Mesh(new THREE.BoxGeometry(.35,.35,.35),new THREE.MeshLambertMaterial({color:0xd9b38c}));head.position.y=1.8;g.add(head);
+  const helm=new THREE.Mesh(new THREE.BoxGeometry(.38,.14,.38),new THREE.MeshLambertMaterial({color:0x223355}));helm.position.y=1.98;g.add(helm);
+  const legs=new THREE.Mesh(new THREE.BoxGeometry(.5,.5,.3),new THREE.MeshLambertMaterial({color:0x223322}));legs.position.y=.25;g.add(legs);
+  const bg=new THREE.Mesh(new THREE.BoxGeometry(.08,.08,.5),gm);bg.position.set(.25,1.2,-.3);g.add(bg);
+  g.position.set(x,0,z);scene.add(g);
+  const b={g,head,body,hp:100,alive:true,target:null,cd:1+Math.random(),seen:0,name:'Penjaga '+(i+1),react:.35+Math.random()*.3,acc:.5+Math.random()*.2};
+  [body,head,legs,helm].forEach(m=>m.userData.bot=b);b.parts=[body,head,legs,helm];bots.push(b);return b}
+
+// ---- round state
+const R={score:[0,0],time:0,phase:'menu',bomb:null,planting:0,round:0,buyTime:0};
+const BOMB_TIME=35,ROUND_TIME=105;
+let bombMesh=null;
+function startRound(){R.round++;
+  bots.forEach(b=>scene.remove(b.g));bots.length=0;
+  const n=Math.min(5,2+Math.floor(R.round/2));
+  for(let i=0;i<n;i++){const s=SPAWN_CT[i%SPAWN_CT.length];makeBot(s[0]+Math.random(),s[1]+Math.random(),i)}
+  P.pos.set(SPAWN_T.x+(Math.random()-.5)*4,1.6,SPAWN_T.z);P.yaw=0;P.pitch=0;P.vy=0;
+  if(!P.alive){P.slots={1:null,2:{type:'pistol',mag:12,res:48}};P.armor=0}
+  P.hp=100;P.alive=true;P.cur=P.slots[1]?1:2;P.reload=0;
+  if(bombMesh){scene.remove(bombMesh);bombMesh=null}
+  R.bomb=null;R.planting=0;R.time=ROUND_TIME;R.phase='play';R.buyTime=15;
+  flashMsg('Ronde '+R.round+' — tekan B untuk beli',2.5);updateHUD()}
+function endRound(win,why){if(R.phase!=='play')return;R.phase='end';R.score[win?0:1]++;
+  P.money=Math.min(16000,P.money+(win?3250:1400+(R.bomb?800:0)));
+  flashMsg((win?'PENYERANG MENANG':'PENJAGA MENANG')+'<br><span style="font-size:18px">'+why+'</span>',4);
+  setTimeout(()=>{if(R.score[0]>=8||R.score[1]>=8){gameOver()}else startRound()},4000)}
+function gameOver(){R.phase='menu';document.exitPointerLock&&document.exitPointerLock();
+  $('menu').classList.remove('hide');$('menu').querySelector('h1').textContent=R.score[0]>=8?'KAMU MENANG!':'KAMU KALAH';
+  $('menu').querySelector('p').innerHTML='Skor akhir '+R.score[0]+' - '+R.score[1]+' · Kill: '+P.kills;$('start').textContent='MAIN LAGI';
+  R.score=[0,0];R.round=0;P.money=800;P.kills=0;P.alive=false}
+
+let msgT=0;function flashMsg(h,t){$('msg').innerHTML=h;msgT=t}
+function feed(t){const d=document.createElement('div');d.textContent=t;$('kill').prepend(d);setTimeout(()=>d.remove(),4000)}
+
+// ---- buy menu
+function openBuy(){if(R.phase!=='play'||R.buyTime<=0||!P.alive)return flashMsg('Waktu beli habis',1.2);
+  document.exitPointerLock&&document.exitPointerLock();$('buy').classList.remove('hide');renderBuy()}
+function closeBuy(){$('buy').classList.add('hide');lock()}
+function renderBuy(){$('buyMoney').textContent='Uang: $'+P.money;const L=$('buyList');L.innerHTML='';
+  const items=[['smg'],['rifle'],['sniper'],['armor']];
+  items.forEach(([k])=>{const b=document.createElement('button');b.className='btn';
+    const price=k==='armor'?ARMOR_PRICE:WEAPONS[k].price;b.textContent=(k==='armor'?'Rompi + Helm':WEAPONS[k].name)+' — $'+price;
+    b.disabled=P.money<price||(k==='armor'&&P.armor>=100);
+    b.onclick=()=>{P.money-=price;if(k==='armor')P.armor=100;else{const w=WEAPONS[k];P.slots[1]={type:k,mag:w.mag,res:w.reserve};P.cur=1;P.reload=0}renderBuy();updateHUD()};
+    L.appendChild(b);L.appendChild(document.createElement('br'))})}
+$('buyClose').onclick=closeBuy;
+
+// ---- input
+const keys={};let mouseDown=false,firePressed=false;
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;
+  if(k==='b'){$('buy').classList.contains('hide')?openBuy():closeBuy()}
+  if(k==='r')startReload();if(k==='1'&&P.slots[1]){P.cur=1;P.reload=0}if(k==='2'){P.cur=2;P.reload=0}
+  if(k===' ')jump()});
+addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+function lock(){if(!isTouch&&R.phase!=='menu')renderer.domElement.requestPointerLock()}
+renderer.domElement.addEventListener('click',lock);
+addEventListener('mousemove',e=>{if(document.pointerLockElement){P.yaw-=e.movementX*.0022;P.pitch=Math.max(-1.5,Math.min(1.5,P.pitch-e.movementY*.0022))}});
+addEventListener('mousedown',e=>{if(document.pointerLockElement){mouseDown=true;firePressed=true}});
+addEventListener('mouseup',()=>mouseDown=false);
+function jump(){if(P.pos.y<=1.61&&P.alive)P.vy=5.2}
+
+// touch
+const joy={id:null,x:0,y:0,cx:0,cy:0},look={id:null,lx:0,ly:0};let touchFire=false,touchUse=false;
+function bindBtn(id,down,up){const el=$(id);el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();down()},{passive:false});el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();up&&up()},{passive:false})}
+if(isTouch){
+  bindBtn('tFire',()=>{touchFire=true;firePressed=true},()=>touchFire=false);
+  bindBtn('tJump',jump);bindBtn('tRel',startReload);bindBtn('tUse',()=>touchUse=true,()=>touchUse=false);
+  bindBtn('tBuy',()=>$('buy').classList.contains('hide')?openBuy():closeBuy());
+  const jr=$('joy');
+  jr.addEventListener('touchstart',e=>{e.preventDefault();const t=e.changedTouches[0];joy.id=t.identifier;const r=jr.getBoundingClientRect();joy.cx=r.left+60;joy.cy=r.top+60;moveJoy(t)},{passive:false});
+  function moveJoy(t){let dx=t.clientX-joy.cx,dy=t.clientY-joy.cy,d=Math.hypot(dx,dy);if(d>50){dx*=50/d;dy*=50/d}joy.x=dx/50;joy.y=dy/50;$('knob').style.transform=`translate(${dx}px,${dy}px)`}
+  addEventListener('touchstart',e=>{for(const t of e.changedTouches)if(t.identifier!==joy.id&&look.id===null&&t.clientX>innerWidth*.35){look.id=t.identifier;look.lx=t.clientX;look.ly=t.clientY}},{passive:false});
+  addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches){if(t.identifier===joy.id)moveJoy(t);
+    if(t.identifier===look.id){P.yaw-=(t.clientX-look.lx)*.006;P.pitch=Math.max(-1.5,Math.min(1.5,P.pitch-(t.clientY-look.ly)*.006));look.lx=t.clientX;look.ly=t.clientY}}},{passive:false});
+  addEventListener('touchend',e=>{for(const t of e.changedTouches){if(t.identifier===joy.id){joy.id=null;joy.x=joy.y=0;$('knob').style.transform=''}if(t.identifier===look.id)look.id=null}});
+}
+
+// ---- shooting
+function startReload(){const w=wep(),W=WEAPONS[w.type];if(P.reload>0||w.mag===W.mag||w.res<=0)return;P.reload=w.type==='sniper'?3:2.2}
+const tracers=[];
+function shoot(){const w=wep(),W=WEAPONS[w.type];if(P.cd>0||P.reload>0)return;if(w.mag<=0){startReload();return}
+  w.mag--;P.cd=W.rate;flash.visible=true;setTimeout(()=>flash.visible=false,40);gun.position.z=-.3;
+  const moving=(Math.abs(joy.x)+Math.abs(joy.y)>.2)||keys.w||keys.a||keys.s||keys.d;
+  const sp=W.spread*(moving?2.5:1)*(P.pos.y>1.65?3:1);
+  const dir=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);dir.x+=(Math.random()-.5)*sp*2;dir.y+=(Math.random()-.5)*sp*2;dir.z+=(Math.random()-.5)*sp*2;dir.normalize();
+  P.pitch=Math.min(1.5,P.pitch+(W.type==='sniper'?.04:.012));
+  ray.set(camera.position,dir);ray.far=150;
+  const targets=wallMeshes.concat(...bots.filter(b=>b.alive).map(b=>b.parts));
+  const hit=ray.intersectObjects(targets)[0];
+  if(hit){const b=hit.object.userData.bot;
+    spark(hit.point,b?0xaa0000:0x998866);
+    if(b){let d=W.dmg;if(hit.object===b.head)d*=3.5;else if(hit.point.y<.6)d*=.75;b.hp-=d;b.seen=3;b.target=P.pos.clone();
+      if(b.hp<=0&&b.alive){b.alive=false;b.g.rotation.x=-Math.PI/2;b.g.position.y=.2;P.kills++;P.money=Math.min(16000,P.money+300);
+        feed('Kamu ➜ '+b.name+(hit.object===b.head?' (headshot)':''));if(bots.every(x=>!x.alive))endRound(true,'Semua penjaga tumbang')}}}
+  updateHUD()}
+const sparks=[];
+function spark(p,c){const m=new THREE.Mesh(new THREE.SphereGeometry(.06,4,4),new THREE.MeshBasicMaterial({color:c}));m.position.copy(p);scene.add(m);sparks.push({m,t:.3})}
+
+// ---- bots logic
+function updateBots(dt){const eye=P.pos.clone();
+  for(const b of bots){if(!b.alive)continue;const bp=b.g.position;const head=new THREE.Vector3(bp.x,1.8,bp.z);
+    const toP=new THREE.Vector3(eye.x-bp.x,0,eye.z-bp.z),dist=toP.length();
+    let sees=P.alive&&dist<55&&losClear(head,eye);
+    if(sees){b.seen+=dt;b.target=P.pos.clone()}else b.seen=Math.max(0,b.seen-dt*.5);
+    if(R.bomb&&!sees)b.target=new THREE.Vector3(R.bomb.x,0,R.bomb.z);
+    if(!b.target||(Math.hypot(b.target.x-bp.x,b.target.z-bp.z)<1.5&&!sees)){const p=PATROL[Math.floor(Math.random()*PATROL.length)];b.target=new THREE.Vector3(p[0],0,p[1])}
+    const tgt=sees?eye:b.target;const ang=Math.atan2(tgt.x-bp.x,tgt.z-bp.z);b.g.rotation.y=ang+Math.PI;
+    // move (stop & shoot when seeing)
+    if(!sees||dist>18){const sp=(sees?2.2:3)*dt;bp.x+=Math.sin(ang)*sp;bp.z+=Math.cos(ang)*sp;collide(bp,.4)}
+    // defuse
+    if(R.bomb&&!R.bomb.defused&&Math.hypot(R.bomb.x-bp.x,R.bomb.z-bp.z)<1.6&&!sees){b.defuse=(b.defuse||0)+dt;if(b.defuse>6){R.bomb.defused=true;endRound(false,'Bom berhasil dijinakkan')}}else b.defuse=0;
+    // shoot
+    b.cd-=dt;if(sees&&b.seen>b.react&&b.cd<=0){b.cd=.18+Math.random()*.25;
+      const hitChance=b.acc*Math.max(.15,1-dist/45)*(P.pos.y>1.65?.6:1);
+      spark(new THREE.Vector3(bp.x+Math.sin(ang)*.4,1.3,bp.z+Math.cos(ang)*.4),0xffdd66);
+      if(Math.random()<hitChance)hurtPlayer(12+Math.random()*12,b)}}}
+function hurtPlayer(d,b){if(!P.alive)return;if(P.armor>0){const a=d*.5;P.armor=Math.max(0,P.armor-a);d-=a*.8}
+  P.hp-=d;$('dmg').style.opacity=.8;setTimeout(()=>$('dmg').style.opacity=0,150);
+  if(P.hp<=0){P.hp=0;P.alive=false;feed(b.name+' ➜ Kamu');if(!R.bomb)endRound(false,'Kamu tewas');else flashMsg('Kamu tewas — bom masih aktif!',3)}updateHUD()}
+
+// ---- HUD
+function updateHUD(){const w=wep(),W=WEAPONS[w.type];
+  $('hp').textContent='✚ '+Math.ceil(P.hp)+(P.armor>0?'  ◈ '+Math.ceil(P.armor):'');
+  $('ammo').textContent=(P.reload>0?'RELOAD… ':'')+W.name+'  '+w.mag+' / '+w.res;$('money').textContent='$ '+P.money}
+function fmt(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
+
+// ---- main loop
+let last=performance.now(),bob=0;
+function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(R.phase==='play'||R.phase==='end'){
+    const buying=!$('buy').classList.contains('hide');
+    if(P.alive&&!buying){
+      let mx=(keys.d?1:0)-(keys.a?1:0)+joy.x,mz=(keys.s?1:0)-(keys.w?1:0)+joy.y;const ml=Math.hypot(mx,mz);if(ml>1){mx/=ml;mz/=ml}
+      const sp=(wep().type==='sniper'?4.2:5)*dt,s=Math.sin(P.yaw),c=Math.cos(P.yaw);
+      if(R.planting<=0){P.pos.x+=(mx*c+mz*s)*sp;P.pos.z+=(mz*c-mx*s)*sp}
+      collide(P.pos,.4);
+      P.vy-=14*dt;P.pos.y+=P.vy*dt;if(P.pos.y<1.6){P.pos.y=1.6;P.vy=0}
+      if(ml>.1)bob+=dt*10;
+      // fire
+      const W=WEAPONS[wep().type];if((W.auto&&(mouseDown||touchFire))||firePressed)shoot();firePressed=false;
+      // plant
+      const inSite=Math.hypot(P.pos.x-SITE.x,P.pos.z-SITE.z)<SITE.r;
+      if(R.phase==='play'&&!R.bomb&&inSite&&(keys.e||touchUse)&&P.pos.y<1.65){R.planting+=dt;$('prog').style.display='block';$('prog').firstChild.style.width=(R.planting/3*100)+'%';
+        if(R.planting>=3){R.bomb={x:P.pos.x,z:P.pos.z,t:BOMB_TIME};R.planting=0;$('prog').style.display='none';
+          bombMesh=new THREE.Mesh(new THREE.BoxGeometry(.4,.2,.3),new THREE.MeshLambertMaterial({color:0x333311,emissive:0x330000}));bombMesh.position.set(R.bomb.x,.1,R.bomb.z);scene.add(bombMesh);
+          P.money+=300;flashMsg('BOM TERPASANG — pertahankan!',2.5);bots.forEach(b=>{if(b.alive)b.target=new THREE.Vector3(R.bomb.x,0,R.bomb.z)})}}
+      else{R.planting=0;$('prog').style.display='none'}
+      if(isTouch)$('tUse').style.opacity=(inSite&&!R.bomb)?1:.3;
+    }
+    camera.position.set(P.pos.x,P.pos.y+Math.sin(bob)*.03,P.pos.z);camera.rotation.set(P.pitch,P.yaw,0,'YXZ');
+    gun.position.z+=(-.35-gun.position.z)*.2;gun.visible=P.alive;
+    if(P.cd>0)P.cd-=dt;
+    if(P.reload>0){P.reload-=dt;if(P.reload<=0){const w=wep(),W=WEAPONS[w.type],n=Math.min(W.mag-w.mag,w.res);w.mag+=n;w.res-=n}updateHUD()}
+    if(R.phase==='play'){updateBots(dt);R.buyTime-=dt;
+      if(R.bomb&&!R.bomb.defused){R.bomb.t-=dt;bombMesh.material.emissive.setHex(Math.floor(now/(R.bomb.t<10?150:500))%2?0xff0000:0x220000);
+        if(R.bomb.t<=0){endRound(true,'Bom meledak!');scene.background=new THREE.Color(0xffaa55);setTimeout(()=>scene.background=new THREE.Color(0x9cc4e4),400)}}
+      else{R.time-=dt;if(R.time<=0)endRound(false,'Waktu habis')}
+      if(!P.alive&&R.bomb)camera.position.set(R.bomb.x+6,8,R.bomb.z+6),camera.lookAt(R.bomb.x,0,R.bomb.z);}
+    const alive=bots.filter(b=>b.alive).length;
+    $('top').innerHTML='Penyerang <b>'+R.score[0]+'</b> : <b>'+R.score[1]+'</b> Penjaga · '+(R.bomb&&!R.bomb.defused?'<span style="color:#f55">💣 '+fmt(R.bomb.t)+'</span>':fmt(R.time))+' · Musuh: '+alive+(R.buyTime>0?' · Beli: '+Math.ceil(R.buyTime):'');
+    if(msgT>0){msgT-=dt;if(msgT<=0)$('msg').innerHTML=''}
+    for(let i=sparks.length-1;i>=0;i--){sparks[i].t-=dt;if(sparks[i].t<=0){scene.remove(sparks[i].m);sparks.splice(i,1)}}
+  }
+  renderer.render(scene,camera)}
+requestAnimationFrame(loop);
+camera.position.set(0,12,40);camera.lookAt(0,0,0);
+
+$('start').onclick=()=>{$('menu').classList.add('hide');$('hud').classList.remove('hide');if(isTouch){$('touch').style.display='block';document.documentElement.requestFullscreen?.().catch(()=>{})}
+  P.alive=false;startRound();lock()};
+</script>
+</body>
+</html>
