@@ -31,7 +31,10 @@ canvas{display:block}
 #touch{position:fixed;inset:0;display:none}
 .tbtn{position:absolute;width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;color:#fff}
 #tFire{right:24px;bottom:110px;width:88px;height:88px;background:rgba(220,60,40,.35)}
-#tJump{right:130px;bottom:40px}#tUse{right:24px;bottom:220px}#tRel{right:130px;bottom:140px}#tSwap{right:236px;bottom:40px}#tZoom{right:236px;bottom:140px}#tBuy{left:16px;top:60px;width:56px;height:56px;font-size:11px}
+#tJump{right:130px;bottom:40px}#tUse{right:24px;bottom:220px}#tRel{right:130px;bottom:140px}#tSwap{right:236px;bottom:40px}#tZoom{right:236px;bottom:140px}#tGyro{left:16px;top:126px;width:56px;height:56px;font-size:11px}
+#gyroSet{margin:10px 0;padding:10px 14px;border:1px solid #6a6040;border-radius:6px;font-size:14px;max-width:420px}
+#gyroSet label{display:inline-block;margin:4px 8px}#gyroSet input[type=range]{width:160px;vertical-align:middle}
+#tBuy{left:16px;top:60px;width:56px;height:56px;font-size:11px}
 #joy{position:absolute;left:30px;bottom:40px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.35)}
 #knob{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.45)}
 </style>
@@ -46,13 +49,18 @@ canvas{display:block}
 <div id="touch">
   <div id="joy"><div id="knob"></div></div>
   <div class="tbtn" id="tFire">FIRE</div><div class="tbtn" id="tJump">JUMP</div>
-  <div class="tbtn" id="tUse">BOM</div><div class="tbtn" id="tRel">RELOAD</div><div class="tbtn" id="tBuy">BELI</div><div class="tbtn" id="tSwap">GANTI</div><div class="tbtn" id="tZoom">ZOOM</div>
+  <div class="tbtn" id="tUse">BOM</div><div class="tbtn" id="tRel">RELOAD</div><div class="tbtn" id="tBuy">BELI</div><div class="tbtn" id="tSwap">GANTI</div><div class="tbtn" id="tZoom">ZOOM</div><div class="tbtn" id="tGyro">GYRO<br>OFF</div>
 </div>
 <div id="menu" class="panel">
   <h1>STRIKE ZONE</h1>
   <p>Kamu tim <b>Penyerang</b>. Pasang bom di zona <b style="color:#f55">A</b> atau habisi semua <b>Penjaga</b>. Ronde pertama yang mencapai 8 kemenangan juara.</p>
   <p>PC: WASD gerak · Mouse bidik · Klik tembak · Spasi lompat · R reload · E (tahan) pasang bom · B beli · 1/2/scroll ganti senjata · Klik kanan zoom (sniper)</p>
   <p>HP: joystick kiri gerak · geser layar kanan bidik · tombol FIRE/JUMP/BOM</p>
+  <div id="gyroSet"><b>🎯 Gyro Aim</b> (bidik dengan memiringkan/memutar HP)<br>
+    <label><input type="checkbox" id="gOn"> Aktif</label>
+    <label>Sensitivitas <input type="range" id="gSens" min="0.3" max="3" step="0.1" value="1.2"> <span id="gSensV">1.2</span></label><br>
+    <label><input type="checkbox" id="gInvX"> Balik horizontal</label><label><input type="checkbox" id="gInvY"> Balik vertikal</label>
+    <div id="gStat" style="font-size:12px;color:#aaa"></div></div>
   <button class="btn" id="start">MULAI</button>
 </div>
 <div id="buy" class="panel hide">
@@ -321,6 +329,37 @@ if(isTouch){
   addEventListener('touchend',e=>{for(const t of e.changedTouches){if(t.identifier===joy.id){joy.id=null;joy.x=joy.y=0;$('knob').style.transform=''}if(t.identifier===look.id)look.id=null}});
 }
 
+// ================= GYRO AIM =================
+const GY={on:false,sens:1.2,invX:false,invY:false,granted:false,last:0,seen:false};
+try{Object.assign(GY,JSON.parse(localStorage.getItem('sz_gyro')||'{}'));GY.granted=false;GY.seen=false}catch(e){}
+function saveGyro(){try{localStorage.setItem('sz_gyro',JSON.stringify({on:GY.on,sens:GY.sens,invX:GY.invX,invY:GY.invY}))}catch(e){}}
+function gyroUI(){$('gOn').checked=GY.on;$('gSens').value=GY.sens;$('gSensV').textContent=(+GY.sens).toFixed(1);$('gInvX').checked=GY.invX;$('gInvY').checked=GY.invY;
+  $('tGyro').innerHTML='GYRO<br>'+(GY.on?'ON':'OFF');$('tGyro').style.background=GY.on?'rgba(80,200,90,.4)':'';
+  $('gStat').textContent=!('DeviceMotionEvent' in window)?'Perangkat tidak punya sensor gerak.':GY.on?(GY.seen?'Sensor aktif ✓':'Menunggu data sensor…'):''}
+async function enableGyro(on){
+  if(on&&!GY.granted){
+    if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
+      try{const r=await DeviceMotionEvent.requestPermission();if(r!=='granted'){GY.on=false;gyroUI();$('gStat').textContent='Izin sensor ditolak. Izinkan "Motion & Orientation" di pengaturan browser.';return}}catch(e){GY.on=false;gyroUI();$('gStat').textContent='Izin sensor gagal: '+e.message;return}}
+    GY.granted=true;addEventListener('devicemotion',onMotion)}
+  GY.on=on;GY.last=0;saveGyro();gyroUI()}
+function screenAngle(){return ((screen.orientation&&screen.orientation.angle)!=null?screen.orientation.angle:(window.orientation||0))%360}
+function onMotion(e){const r=e.rotationRate;if(!r||r.beta==null)return;GY.seen=true;
+  const now=performance.now();const dt=GY.last?Math.min(.1,(now-GY.last)/1000):0;GY.last=now;if(!dt)return;
+  if(!GY.on||R.phase!=='play'||!P.alive||!$('buy').classList.contains('hide'))return;
+  let rx=r.beta,ry=r.gamma,yawR,pitchR;const a=(screenAngle()+360)%360;
+  if(a===90){yawR=rx;pitchR=-ry}else if(a===270){yawR=-rx;pitchR=ry}else if(a===180){yawR=-ry;pitchR=-rx}else{yawR=ry;pitchR=rx}
+  const dz=1.2;yawR=Math.abs(yawR)<dz?0:yawR;pitchR=Math.abs(pitchR)<dz?0:pitchR;
+  const k=GY.sens*(zoomed?.35:1)*Math.PI/180*dt;
+  const dy=yawR*k*(GY.invX?-1:1),dp=pitchR*k*(GY.invY?-1:1);
+  P.yaw+=dy;P.pitch=Math.max(-1.5,Math.min(1.5,P.pitch+dp));
+  A.sway.x=Math.max(-.03,Math.min(.03,A.sway.x+dy*.4))}
+$('gOn').onchange=e=>enableGyro(e.target.checked);
+$('gSens').oninput=e=>{GY.sens=+e.target.value;saveGyro();gyroUI()};
+$('gInvX').onchange=e=>{GY.invX=e.target.checked;saveGyro()};$('gInvY').onchange=e=>{GY.invY=e.target.checked;saveGyro()};
+if(isTouch)bindBtn('tGyro',()=>enableGyro(!GY.on));
+setInterval(()=>{if(GY.on&&$('gStat'))gyroUI()},1000);
+gyroUI();
+
 // ---- shooting
 function startReload(){const w=wep(),W=WEAPONS[w.type];if(P.reload>0||A.swap>.3||w.mag===W.mag||w.res<=0||!P.alive)return;setZoom(false);P.reload=P.reloadMax={pistol:1.6,smg:2,rifle:2.4,sniper:3.2}[w.type];A.reloadFlags={};updateHUD()}
 const tracers=[];
@@ -418,7 +457,7 @@ requestAnimationFrame(loop);
 camera.position.set(0,12,40);camera.lookAt(0,0,0);
 
 $('start').onclick=()=>{$('menu').classList.add('hide');$('hud').classList.remove('hide');if(isTouch){$('touch').style.display='block';document.documentElement.requestFullscreen?.().catch(()=>{})}
-  P.alive=false;initAudio();startRound();lock()};
+  P.alive=false;initAudio();if(GY.on&&!GY.granted)enableGyro(true);startRound();lock()};
 </script>
 </body>
 </html>
