@@ -6,6 +6,7 @@
 <title>Strike Zone</title>
 <style>
 *{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:Verdana,Tahoma,sans-serif;color:#e8e2c8;touch-action:none;user-select:none;-webkit-user-select:none}
 canvas{display:block}
 #hud{position:fixed;inset:0;pointer-events:none}
@@ -22,7 +23,10 @@ canvas{display:block}
 #scope{position:absolute;inset:0;display:none;background:radial-gradient(circle at center,transparent 0 34vmin,#000 34.5vmin)}#scope:before,#scope:after{content:"";position:absolute;background:#000}#scope:before{left:50%;top:0;bottom:0;width:2px}#scope:after{top:50%;left:0;right:0;height:2px}
 #hitm{position:absolute;left:50%;top:50%;width:30px;height:30px;transform:translate(-50%,-50%) rotate(45deg);opacity:0;transition:opacity .15s}#hitm:before,#hitm:after{content:"";position:absolute;background:#fff}#hitm:before{left:14px;top:0;width:2px;height:30px}#hitm:after{top:14px;left:0;height:2px;width:30px}
 #dmg{position:absolute;inset:0;background:radial-gradient(transparent 50%,rgba(255,0,0,.6));opacity:0;transition:opacity .3s}
-.panel{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,12,8,.88);text-align:center;padding:16px}
+.panel{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:rgba(10,12,8,.88);text-align:center;padding:16px}
+.panel>:first-child{margin-top:auto!important}.panel>:last-child{margin-bottom:auto!important}
+@media (max-height:520px){.panel{padding:8px 12px}.panel h1{font-size:24px!important;margin:0 0 2px}.panel p{font-size:12px;margin:2px}#gyroSet{margin:4px 0;padding:6px 10px;font-size:12px}.btn{font-size:14px;padding:7px 14px;margin:3px;min-width:160px}#buyList{display:flex;flex-wrap:wrap;justify-content:center}#buyList br{display:none}}
+.is-touch .pc-only,.is-pc .mob-only{display:none}
 .panel h1{font-size:40px;margin:0 0 6px;color:#f0c050;letter-spacing:3px}
 .panel p{margin:4px;font-size:14px;max-width:520px}
 .btn{pointer-events:auto;font-family:inherit;font-size:16px;padding:10px 18px;margin:5px;border:2px solid #f0c050;background:#2b2a1c;color:#f0c050;border-radius:4px;cursor:pointer;min-width:200px}
@@ -54,8 +58,8 @@ canvas{display:block}
 <div id="menu" class="panel">
   <h1>STRIKE ZONE</h1>
   <p>Kamu tim <b>Penyerang</b>. Pasang bom di zona <b style="color:#f55">A</b> atau habisi semua <b>Penjaga</b>. Ronde pertama yang mencapai 8 kemenangan juara.</p>
-  <p>PC: WASD gerak · Mouse bidik · Klik tembak · Spasi lompat · R reload · E (tahan) pasang bom · B beli · 1/2/scroll ganti senjata · Klik kanan zoom (sniper)</p>
-  <p>HP: joystick kiri gerak · geser layar kanan bidik · tombol FIRE/JUMP/BOM</p>
+  <p class="pc-only">PC: WASD gerak · Mouse bidik · Klik tembak · Spasi lompat · R reload · E (tahan) pasang bom · B beli · 1/2/scroll ganti senjata · Klik kanan zoom (sniper)</p>
+  <p class="mob-only">HP: joystick kiri gerak · geser layar kanan bidik · tombol FIRE/JUMP/BOM</p>
   <div id="gyroSet"><b>🎯 Gyro Aim</b> (bidik dengan memiringkan/memutar HP)<br>
     <label><input type="checkbox" id="gOn"> Aktif</label>
     <label>Sensitivitas <input type="range" id="gSens" min="0.3" max="3" step="0.1" value="1.2"> <span id="gSensV">1.2</span></label><br>
@@ -70,7 +74,7 @@ canvas{display:block}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-const isTouch='ontouchstart' in window;
+const isTouch='ontouchstart' in window;document.documentElement.classList.add(isTouch?'is-touch':'is-pc');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x9cc4e4);scene.fog=new THREE.Fog(0x9cc4e4,30,90);
 const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.05,200);
 const renderer=new THREE.WebGLRenderer({antialias:!isTouch});renderer.setPixelRatio(Math.min(devicePixelRatio,isTouch?1.5:2));
