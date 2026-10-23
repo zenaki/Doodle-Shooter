@@ -79,7 +79,7 @@ canvas{display:block}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-const VERSION='v1.7',BUILD='23 Okt 2026 18:25';
+const VERSION='v1.8',BUILD='23 Okt 2026 18:30';
 $('vbadge').textContent=VERSION+' · '+BUILD;$('ver').textContent='Strike Zone '+VERSION;
 // auto check for newer version (bypasses GitHub Pages cache)
 function checkUpdate(){fetch(location.pathname+'?nocache='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{const m=t.match(/const VERSION='([^']+)'/);
@@ -351,7 +351,7 @@ try{Object.assign(GY,JSON.parse(localStorage.getItem('sz_gyro')||'{}'));GY.grant
 function saveGyro(){try{localStorage.setItem('sz_gyro',JSON.stringify({on:GY.on,sens:GY.sens,invX:GY.invX,invY:GY.invY}))}catch(e){}}
 function gyroUI(){$('gOn').checked=GY.on;$('gSens').value=GY.sens;$('gSensV').textContent=(+GY.sens).toFixed(1);$('gInvX').checked=GY.invX;$('gInvY').checked=GY.invY;
   $('tGyro').innerHTML='GYRO<br>'+(GY.on?'ON':'OFF');$('tGyro').style.background=GY.on?'rgba(80,200,90,.4)':'';
-  if(!GY.on||GY.seen||performance.now()-(GY.enabledAt||0)<2500)$('gStat').textContent=!('DeviceMotionEvent' in window||'DeviceOrientationEvent' in window)?'Perangkat tidak punya sensor gerak.':GY.on?(GY.seen?'Sensor aktif ✓ ('+(GY.useMotion?'gyroscope':'orientasi')+')':'Menunggu data sensor…'):''}
+  if(!GY.on||GY.seen||performance.now()-(GY.enabledAt||0)<2500)$('gStat').textContent=!('DeviceMotionEvent' in window||'DeviceOrientationEvent' in window)?'Perangkat tidak punya sensor gerak.':GY.on?(GY.seen?'Sensor aktif ✓':'Menunggu data sensor…'):''}
 async function reqPerm(Ev){if(typeof Ev!=='undefined'&&typeof Ev.requestPermission==='function'){try{return (await Ev.requestPermission())==='granted'}catch(e){GY.err=e.message;return false}}return true}
 async function enableGyro(on){
   if(on&&!GY.granted){
@@ -360,22 +360,24 @@ async function enableGyro(on){
     GY.granted=true;addEventListener('devicemotion',onMotion);addEventListener('deviceorientation',onOrient)}
   GY.on=on;GY.last=0;GY.prevO=null;GY.enabledAt=performance.now();saveGyro();gyroUI();
   if(on)setTimeout(()=>{if(GY.on&&!GY.seen){$('gStat').textContent=(GY.denied?'Izin sensor ditolak. ':'')+'Sensor tidak mengirim data. iPhone: pakai Safari & aktifkan Settings › Safari › Motion & Orientation Access. Android: pastikan halaman dibuka via https.';flashMsg('Gyro: sensor tidak mengirim data',3)}},2500)}
-function screenAngle(){return ((screen.orientation&&screen.orientation.angle)!=null?screen.orientation.angle:(window.orientation||0))%360}
+function screenAngle(){if(typeof window.orientation==='number')return window.orientation;return (screen.orientation&&screen.orientation.angle)||0}
 function gyroActive(){return GY.on&&R.phase==='play'&&P.alive&&$('buy').classList.contains('hide')}
-function applyGyro(rx,ry){ // rx,ry = rotation in degrees about device x / y axes
-  let yawD,pitchD;const a=(screenAngle()+360)%360;
-  if(a===90){yawD=rx;pitchD=-ry}else if(a===270){yawD=-rx;pitchD=ry}else if(a===180){yawD=-ry;pitchD=-rx}else{yawD=ry;pitchD=rx}
-  const k=GY.sens*(zoomed?.35:1)*Math.PI/180;
-  const dy=yawD*k*(GY.invX?-1:1),dp=pitchD*k*(GY.invY?-1:1);
+// Full device pose -> camera forward vector (same math as three.js DeviceOrientationControls), works in any screen orientation
+const _zee=new THREE.Vector3(0,0,1),_eu=new THREE.Euler(),_q0=new THREE.Quaternion(),_q1=new THREE.Quaternion(-Math.sqrt(.5),0,0,Math.sqrt(.5)),_q=new THREE.Quaternion(),_f=new THREE.Vector3(),DEG=Math.PI/180;
+function poseYawPitch(al,be,ga,orient){_eu.set(be*DEG,al*DEG,-ga*DEG,'YXZ');_q.setFromEuler(_eu);_q.multiply(_q1);_q.multiply(_q0.setFromAxisAngle(_zee,-orient*DEG));
+  _f.set(0,0,-1).applyQuaternion(_q);return {yaw:Math.atan2(-_f.x,-_f.z),pitch:Math.asin(Math.max(-1,Math.min(1,_f.y))),up:Math.abs(_f.y)}}
+function wrapR(d){while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return d}
+function onMotion(){}
+function onOrient(e){if(e.beta==null||e.gamma==null)return;GY.seen=true;
+  const cur=poseYawPitch(e.alpha||0,e.beta,e.gamma,screenAngle()),pv=GY.prevO;GY.prevO=cur;
+  if(!pv||!gyroActive())return;
+  let dy=wrapR(cur.yaw-pv.yaw),dp=cur.pitch-pv.pitch;
+  if(cur.up>.97||pv.up>.97)dy=0;               // yaw unstable when looking straight up/down
+  if(Math.abs(dy)>.5)dy=0;if(Math.abs(dp)>.5)dp=0; // ignore glitches/orientation flips
+  if(Math.abs(dy)<.0006)dy=0;if(Math.abs(dp)<.0006)dp=0; // deadzone
+  const k=GY.sens*(zoomed?.35:1);dy*=k*(GY.invX?-1:1);dp*=k*(GY.invY?-1:1);
   P.yaw+=dy;P.pitch=Math.max(-1.5,Math.min(1.5,P.pitch+dp));A.sway.x=Math.max(-.03,Math.min(.03,A.sway.x+dy*.4))}
-function onMotion(e){const r=e.rotationRate;if(!r||r.beta==null||r.gamma==null)return;GY.seen=true;GY.useMotion=true;
-  const now=performance.now(),dt=GY.last?Math.min(.1,(now-GY.last)/1000):0;GY.last=now;if(!dt||!gyroActive())return;
-  const dz=1.5;let bx=Math.abs(r.beta)<dz?0:r.beta,gy=Math.abs(r.gamma)<dz?0:r.gamma;applyGyro(bx*dt,gy*dt)}
-function wrap(d){while(d>180)d-=360;while(d<-180)d+=360;return d}
-function onOrient(e){if(e.beta==null)return;if(GY.useMotion){GY.prevO=null;return}GY.seen=true; // fallback when no rotationRate
-  const cur={b:e.beta,g:e.gamma,al:e.alpha||0};const pv=GY.prevO;GY.prevO=cur;if(!pv||!gyroActive())return;
-  let db=wrap(cur.b-pv.b),dg=wrap(cur.g-pv.g);if(Math.abs(cur.g)>80||Math.abs(pv.g)>80)dg=0;
-  if(Math.abs(db)<.05)db=0;if(Math.abs(dg)<.05)dg=0;applyGyro(db,dg)}
+addEventListener('orientationchange',()=>GY.prevO=null);
 $('gOn').onchange=e=>enableGyro(e.target.checked);
 $('gSens').oninput=e=>{GY.sens=+e.target.value;saveGyro();gyroUI()};
 $('gInvX').onchange=e=>{GY.invX=e.target.checked;saveGyro()};$('gInvY').onchange=e=>{GY.invY=e.target.checked;saveGyro()};
