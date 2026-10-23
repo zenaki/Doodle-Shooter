@@ -3,6 +3,14 @@
 Semua perubahan penting pada game Strike Zone dicatat di sini.
 Game: https://zenaki.github.io/Doodle-Shooter/strike/
 
+## v1.11 — 23 Okt 2026
+### Ditambahkan
+- Model 3D senjata asli (CC0, Quaternius Ultimate Gun Pack): pistol, SMG, rifle gaya AK, sniper dengan scope.
+- Suara tembakan rekaman asli (CC0, Free Firearm Sound Library) untuk tiap senjata dan tembakan musuh.
+- `assets/CREDITS.md` berisi sumber dan lisensi aset.
+### Catatan
+- Model prosedural lama tetap dipakai sebagai cadangan bila model gagal dimuat.
+
 ## v1.10 — 23 Okt 2026
 ### Ditambahkan
 - Pilihan tingkat kesulitan: **Mudah, Normal, Sulit, Ahli**. Memengaruhi akurasi, waktu reaksi, damage, nyawa, kecepatan, laju tembak, dan jarak pandang bot.
