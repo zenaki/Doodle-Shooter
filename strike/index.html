@@ -191,7 +191,7 @@ function buildGun(type){const g=new THREE.Group(),inner=new THREE.Group();g.add(
   return {g,inner,mag,magY:mag.position.y,magRx:mag.rotation.x,slide,slideZ:slide.position.z,flash:fl,light,arm2,arm2Z:arm2.position.z}}
 const GUNS={};for(const k of ['pistol','smg','rifle','sniper']){GUNS[k]=buildGun(k);GUNS[k].g.visible=false;camera.add(GUNS[k].g)}
 scene.add(camera);
-const BASE=new THREE.Vector3(.2,-.2,-.38);
+const BASE=isTouch?new THREE.Vector3(.24,-.23,-.42):new THREE.Vector3(.2,-.2,-.38);if(isTouch)for(const k in GUNS)GUNS[k].g.scale.setScalar(.8);
 const A={kick:0,kickRot:0,side:0,swap:0,flashT:0,punch:0,lastType:null,reloadFlags:{},sway:{x:0,y:0},landKick:0};
 const shells=[];
 function ejectShell(){const G=GUNS[wep().type];const m=new THREE.Mesh(new THREE.BoxGeometry(.012,.012,.03),new THREE.MeshLambertMaterial({color:0xc9a23a,emissive:0x332200}));
@@ -252,7 +252,7 @@ function makeBot(x,z,i){const g=new THREE.Group();
   const head=new THREE.Mesh(new THREE.BoxGeometry(.35,.35,.35),new THREE.MeshLambertMaterial({color:0xd9b38c}));head.position.y=1.8;g.add(head);
   const helm=new THREE.Mesh(new THREE.BoxGeometry(.38,.14,.38),new THREE.MeshLambertMaterial({color:0x223355}));helm.position.y=1.98;g.add(helm);
   const legs=new THREE.Mesh(new THREE.BoxGeometry(.5,.5,.3),new THREE.MeshLambertMaterial({color:0x223322}));legs.position.y=.25;g.add(legs);
-  const bg=new THREE.Mesh(new THREE.BoxGeometry(.08,.08,.5),gm);bg.position.set(.25,1.2,-.3);g.add(bg);
+  const bg=new THREE.Mesh(new THREE.BoxGeometry(.08,.08,.5),MAT.metal);bg.position.set(.25,1.2,-.3);g.add(bg);
   g.position.set(x,0,z);scene.add(g);
   const b={g,head,body,hp:100,alive:true,target:null,cd:1+Math.random(),seen:0,name:'Penjaga '+(i+1),react:.35+Math.random()*.3,acc:.5+Math.random()*.2};
   [body,head,legs,helm].forEach(m=>m.userData.bot=b);b.parts=[body,head,legs,helm];bots.push(b);return b}
