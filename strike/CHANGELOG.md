@@ -3,6 +3,13 @@
 Semua perubahan penting pada game Strike Zone dicatat di sini.
 Game: https://zenaki.github.io/Doodle-Shooter/strike/
 
+## v1.16 — 24 Okt 2026
+### Ditambahkan
+- **Dekorasi peta** dari Toon Shooter Game Kit (CC0): semua peti diganti model peti kayu asli; tambahan kontainer panjang & kecil, karung pasir di zona A, tangki air, barrier, pagar, mobil rusak + ban, tank, pohon, lampu jalan, cone, palet & kardus. Semua yang besar punya collider (bisa dipakai berlindung, menahan peluru & granat).
+- **Tong meledak:** 6 tong merah di peta. Tembak (atau kena ledakan) → meledak, melukai bot dan pemain di sekitar, dan bisa memicu tong lain (reaksi berantai). Tong pulih setiap ronde.
+- **Health pickup:** 3 kotak P3K berputar di peta; ambil untuk +50 nyawa (muncul lagi setelah 30 detik).
+- **Ranjau ($400, maks 2) & Jebakan beruang ($250, maks 2)** di menu Beli → Perlengkapan. Pasang dengan tombol RANJAU di HP atau F di PC. Ranjau aktif setelah 1 detik dan meledak bila bot menginjaknya; jebakan menjepit bot 4 detik + 35 damage.
+
 ## v1.15 — 24 Okt 2026
 ### Ditambahkan
 - **Pilih karakter** di menu awal: Tentara, Penyerbu, atau Hazmat, dengan pratinjau 3D berputar. Warna sarung tangan di tangan mengikuti karakter; musuh memakai dua karakter lainnya.
