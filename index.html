@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Doodle Shooter</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#f7f3e8;font-family:"Comic Sans MS","Chalkboard SE","Marker Felt",cursive;touch-action:none;user-select:none}
+  canvas{display:block}
+  #ui{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:rgba(247,243,232,.88);text-align:center;color:#222}
+  #ui h1{font-size:48px;margin:0 0 8px;transform:rotate(-3deg)}
+  #ui p{margin:6px 16px;font-size:18px}
+  button{font-family:inherit;font-size:24px;padding:10px 32px;margin-top:16px;border:3px solid #222;border-radius:12px 18px 10px 20px;background:#ffe066;cursor:pointer;box-shadow:4px 4px 0 #222}
+  button:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #222}
+  .hide{display:none!important}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui">
+  <h1>✏️ Doodle Shooter</h1>
+  <p>PC: <b>WASD</b> gerak · <b>Mouse</b> bidik · <b>Klik</b> tembak</p>
+  <p>HP: joystick kiri gerak · joystick kanan bidik & tembak</p>
+  <p id="info"></p>
+  <button id="play">MAIN!</button>
+</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+let W,H;function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight}resize();addEventListener('resize',resize);
+const ui=document.getElementById('ui'),info=document.getElementById('info');
+let best=+(localStorage.getItem('doodleBest')||0);
+const keys={},mouse={x:0,y:0,down:false};
+addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
+addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+cv.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY});
+cv.addEventListener('mousedown',()=>mouse.down=true);
+addEventListener('mouseup',()=>mouse.down=false);
+
+// Touch joysticks
+const sticks={L:null,R:null};
+function stickFor(t){return t.clientX<W/2?'L':'R'}
+cv.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches){const s=stickFor(t);if(!sticks[s])sticks[s]={id:t.identifier,ox:t.clientX,oy:t.clientY,dx:0,dy:0}}},{passive:false});
+cv.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches)for(const k in sticks){const s=sticks[k];if(s&&s.id===t.identifier){let dx=t.clientX-s.ox,dy=t.clientY-s.oy,d=Math.hypot(dx,dy);if(d>50){dx*=50/d;dy*=50/d}s.dx=dx/50;s.dy=dy/50}}},{passive:false});
+cv.addEventListener('touchend',e=>{for(const t of e.changedTouches)for(const k in sticks)if(sticks[k]&&sticks[k].id===t.identifier)sticks[k]=null});
+
+const rnd=(a,b)=>a+Math.random()*(b-a);
+// Wobbly doodle circle
+function doodleCircle(x,y,r,fill,seed=0){ctx.beginPath();for(let i=0;i<=16;i++){const a=i/16*Math.PI*2,w=r+Math.sin(i*3+seed+t*0.01)*r*0.06;ctx.lineTo(x+Math.cos(a)*w,y+Math.sin(a)*w)}ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill()}ctx.lineWidth=3;ctx.strokeStyle='#222';ctx.stroke()}
+
+let P,bullets,enemies,parts,pickups,score,wave,t,running=false,shake=0,spawnTimer;
+function reset(){P={x:W/2,y:H/2,r:18,hp:5,cd:0,ang:0,inv:0,rapid:0,spread:0};bullets=[];enemies=[];parts=[];pickups=[];score=0;wave=1;t=0;spawnTimer=0}
+
+const TYPES={
+  blob:{r:16,sp:1.4,hp:1,col:'#ff8fa3',pts:10},
+  fast:{r:11,sp:2.8,hp:1,col:'#8ce99a',pts:15},
+  tank:{r:28,sp:0.8,hp:6,col:'#74c0fc',pts:40},
+  shooter:{r:18,sp:1,hp:2,col:'#ffa94d',pts:25}
+};
+function spawn(){const side=Math.floor(rnd(0,4));let x,y;if(side==0){x=rnd(0,W);y=-40}else if(side==1){x=W+40;y=rnd(0,H)}else if(side==2){x=rnd(0,W);y=H+40}else{x=-40;y=rnd(0,H)}
+  const pool=['blob','blob','fast'];if(wave>2)pool.push('tank');if(wave>3)pool.push('shooter','fast');
+  const k=pool[Math.floor(Math.random()*pool.length)],T=TYPES[k];
+  enemies.push({k,x,y,r:T.r,hp:T.hp+Math.floor(wave/5),sp:T.sp*(1+wave*0.04),col:T.col,pts:T.pts,cd:rnd(60,140),seed:rnd(0,10),hit:0})}
+function burst(x,y,col,n=10){for(let i=0;i<n;i++)parts.push({x,y,vx:rnd(-4,4),vy:rnd(-4,4),life:rnd(20,40),col})}
+
+function shoot(){const n=P.spread>0?3:1;for(let i=0;i<n;i++){const a=P.ang+(i-(n-1)/2)*0.2;bullets.push({x:P.x+Math.cos(a)*24,y:P.y+Math.sin(a)*24,vx:Math.cos(a)*10,vy:Math.sin(a)*10,mine:true})}P.cd=P.rapid>0?5:12}
+
+function update(){t++;
+  let mx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),my=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
+  if(sticks.L){mx=sticks.L.dx;my=sticks.L.dy}
+  const m=Math.hypot(mx,my);if(m>1){mx/=m;my/=m}
+  P.x=Math.max(P.r,Math.min(W-P.r,P.x+mx*4.5));P.y=Math.max(P.r,Math.min(H-P.r,P.y+my*4.5));
+  let firing=mouse.down;
+  if(sticks.R&&Math.hypot(sticks.R.dx,sticks.R.dy)>0.3){P.ang=Math.atan2(sticks.R.dy,sticks.R.dx);firing=true}
+  else if(!sticks.R)P.ang=Math.atan2(mouse.y-P.y,mouse.x-P.x);
+  if(P.cd>0)P.cd--;if(firing&&P.cd<=0)shoot();
+  if(P.inv>0)P.inv--;if(P.rapid>0)P.rapid--;if(P.spread>0)P.spread--;
+
+  wave=1+Math.floor(score/250);
+  spawnTimer--;if(spawnTimer<=0){spawn();spawnTimer=Math.max(18,70-wave*5)}
+
+  for(const b of bullets){b.x+=b.vx;b.y+=b.vy}
+  bullets=bullets.filter(b=>b.x>-20&&b.x<W+20&&b.y>-20&&b.y<H+20&&!b.dead);
+
+  for(const e of enemies){const a=Math.atan2(P.y-e.y,P.x-e.x),d=Math.hypot(P.y-e.y,P.x-e.x);
+    if(e.k==='shooter'&&d<300){e.cd--;if(e.cd<=0){bullets.push({x:e.x,y:e.y,vx:Math.cos(a)*4.5,vy:Math.sin(a)*4.5,mine:false});e.cd=110}}
+    else{e.x+=Math.cos(a)*e.sp;e.y+=Math.sin(a)*e.sp}
+    if(e.hit>0)e.hit--;
+    for(const b of bullets)if(b.mine&&!b.dead&&Math.hypot(b.x-e.x,b.y-e.y)<e.r+5){b.dead=true;e.hp--;e.hit=5;burst(b.x,b.y,'#222',3);
+      if(e.hp<=0){e.dead=true;score+=e.pts;burst(e.x,e.y,e.col,16);shake=6;
+        if(Math.random()<0.1)pickups.push({x:e.x,y:e.y,k:['heart','rapid','spread'][Math.floor(Math.random()*3)],life:600})}}
+    if(!e.dead&&d<e.r+P.r)hurt(e);
+  }
+  for(const b of bullets)if(!b.mine&&!b.dead&&Math.hypot(b.x-P.x,b.y-P.y)<P.r+5){b.dead=true;hurt()}
+  enemies=enemies.filter(e=>!e.dead);
+
+  for(const p of pickups){p.life--;if(Math.hypot(p.x-P.x,p.y-P.y)<P.r+14){p.dead=true;
+    if(p.k==='heart')P.hp=Math.min(5,P.hp+1);if(p.k==='rapid')P.rapid=480;if(p.k==='spread')P.spread=480;burst(p.x,p.y,'#ffd43b',12)}}
+  pickups=pickups.filter(p=>!p.dead&&p.life>0);
+  for(const p of parts){p.x+=p.vx;p.y+=p.vy;p.vx*=.92;p.vy*=.92;p.life--}parts=parts.filter(p=>p.life>0);
+  if(shake>0)shake*=.85;
+}
+function hurt(e){if(P.inv>0)return;P.hp--;P.inv=70;shake=12;burst(P.x,P.y,'#e03131',14);if(e){e.dead=true;burst(e.x,e.y,e.col,12)}if(P.hp<=0)gameOver()}
+
+function drawPaper(){ctx.fillStyle='#fdfbf3';ctx.fillRect(0,0,W,H);ctx.strokeStyle='#c5dcf2';ctx.lineWidth=1;for(let y=30;y<H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}ctx.strokeStyle='#f4a3a3';ctx.beginPath();ctx.moveTo(60,0);ctx.lineTo(60,H);ctx.stroke()}
+function draw(){ctx.save();if(shake>0.5)ctx.translate(rnd(-shake,shake),rnd(-shake,shake));drawPaper();
+  for(const p of pickups){const ic={heart:'❤️',rapid:'⚡',spread:'✳️'}[p.k];if(p.life>120||t%10<5){doodleCircle(p.x,p.y,14,'#fff3bf');ctx.font='16px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ic,p.x,p.y+1)}}
+  for(const e of enemies){doodleCircle(e.x,e.y,e.r,e.hit?'#fff':e.col,e.seed);const a=Math.atan2(P.y-e.y,P.x-e.x);
+    for(const s of[-1,1]){const ex=e.x+Math.cos(a+s*0.5)*e.r*0.45,ey=e.y+Math.sin(a+s*0.5)*e.r*0.45;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ex,ey,e.r*0.22,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#222';ctx.beginPath();ctx.arc(ex+Math.cos(a)*2,ey+Math.sin(a)*2,e.r*0.1,0,7);ctx.fill()}}
+  for(const b of bullets){ctx.fillStyle=b.mine?'#222':'#e8590c';ctx.beginPath();ctx.arc(b.x,b.y,b.mine?4:6,0,7);ctx.fill()}
+  if(!(P.inv>0&&t%8<4)){ctx.save();ctx.translate(P.x,P.y);ctx.rotate(P.ang);ctx.fillStyle='#495057';ctx.fillRect(10,-5,22,10);ctx.lineWidth=3;ctx.strokeStyle='#222';ctx.strokeRect(10,-5,22,10);ctx.restore();
+    doodleCircle(P.x,P.y,P.r,'#ffe066',1);ctx.fillStyle='#222';ctx.beginPath();ctx.arc(P.x+Math.cos(P.ang-.5)*8,P.y+Math.sin(P.ang-.5)*8,3,0,7);ctx.arc(P.x+Math.cos(P.ang+.5)*8,P.y+Math.sin(P.ang+.5)*8,3,0,7);ctx.fill()}
+  for(const p of parts){ctx.globalAlpha=p.life/40;ctx.fillStyle=p.col;ctx.fillRect(p.x-2,p.y-2,4,4)}ctx.globalAlpha=1;
+  ctx.restore();
+  ctx.fillStyle='#222';ctx.font='bold 22px "Comic Sans MS",cursive';ctx.textAlign='left';ctx.textBaseline='top';
+  ctx.fillText('Skor: '+score,74,12);ctx.fillText('Wave '+wave,74,40);ctx.fillText('❤️'.repeat(P.hp),74,68);
+  ctx.textAlign='right';ctx.fillText('Best: '+best,W-14,12);let y=40;if(P.rapid>0){ctx.fillText('⚡ Rapid',W-14,y);y+=28}if(P.spread>0)ctx.fillText('✳️ Spread',W-14,y);
+  for(const k in sticks){const s=sticks[k];if(s){ctx.globalAlpha=.3;ctx.beginPath();ctx.arc(s.ox,s.oy,50,0,7);ctx.stroke();ctx.fillStyle='#222';ctx.beginPath();ctx.arc(s.ox+s.dx*50,s.oy+s.dy*50,20,0,7);ctx.fill();ctx.globalAlpha=1}}
+}
+function loop(){if(!running)return;update();draw();requestAnimationFrame(loop)}
+function gameOver(){running=false;if(score>best){best=score;localStorage.setItem('doodleBest',best)}info.innerHTML='<b>Game Over!</b> Skor: '+score+' · Best: '+best;document.getElementById('play').textContent='MAIN LAGI';ui.classList.remove('hide')}
+document.getElementById('play').onclick=()=>{ui.classList.add('hide');reset();running=true;loop()};
+reset();drawPaper();
+</script>
+</body>
+</html>
