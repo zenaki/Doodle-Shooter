@@ -3,6 +3,13 @@
 Semua perubahan penting pada game Strike Zone dicatat di sini.
 Game: https://zenaki.github.io/Doodle-Shooter/strike/
 
+## v1.17 — 24 Okt 2026
+### Diperbaiki
+- **Bot tidak lagi tersangkut.** Bot sekarang memakai pencarian jalur (A* di grid peta 80×80) yang memutari dinding dan properti, ditambah deteksi macet yang menghitung ulang jalur atau memilih titik patroli lain. Dalam simulasi 3 menit dengan 10 bot, waktu tersangkut turun dari 89% menjadi ±1%.
+- Bot menghadap arah jalannya saat berpatroli (tidak lagi berjalan menyamping).
+### Ditambahkan
+- **Tombol PETA** (HP) / **M** (PC): peta seluruh arena yang menampilkan posisi & arah hadap kamu (panah + kerucut pandang), semua musuh (merah; × untuk yang tewas), zona bom A, lokasi bom yang dipasang (berkedip), kotak P3K, dan tong meledak.
+
 ## v1.16 — 24 Okt 2026
 ### Ditambahkan
 - **Dekorasi peta** dari Toon Shooter Game Kit (CC0): semua peti diganti model peti kayu asli; tambahan kontainer panjang & kecil, karung pasir di zona A, tangki air, barrier, pagar, mobil rusak + ban, tank, pohon, lampu jalan, cone, palet & kardus. Semua yang besar punya collider (bisa dipakai berlindung, menahan peluru & granat).
