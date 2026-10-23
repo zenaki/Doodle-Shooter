@@ -340,28 +340,35 @@ try{Object.assign(GY,JSON.parse(localStorage.getItem('sz_gyro')||'{}'));GY.grant
 function saveGyro(){try{localStorage.setItem('sz_gyro',JSON.stringify({on:GY.on,sens:GY.sens,invX:GY.invX,invY:GY.invY}))}catch(e){}}
 function gyroUI(){$('gOn').checked=GY.on;$('gSens').value=GY.sens;$('gSensV').textContent=(+GY.sens).toFixed(1);$('gInvX').checked=GY.invX;$('gInvY').checked=GY.invY;
   $('tGyro').innerHTML='GYRO<br>'+(GY.on?'ON':'OFF');$('tGyro').style.background=GY.on?'rgba(80,200,90,.4)':'';
-  $('gStat').textContent=!('DeviceMotionEvent' in window)?'Perangkat tidak punya sensor gerak.':GY.on?(GY.seen?'Sensor aktif ✓':'Menunggu data sensor…'):''}
+  if(!GY.on||GY.seen||performance.now()-(GY.enabledAt||0)<2500)$('gStat').textContent=!('DeviceMotionEvent' in window||'DeviceOrientationEvent' in window)?'Perangkat tidak punya sensor gerak.':GY.on?(GY.seen?'Sensor aktif ✓ ('+(GY.useMotion?'gyroscope':'orientasi')+')':'Menunggu data sensor…'):''}
+async function reqPerm(Ev){if(typeof Ev!=='undefined'&&typeof Ev.requestPermission==='function'){try{return (await Ev.requestPermission())==='granted'}catch(e){GY.err=e.message;return false}}return true}
 async function enableGyro(on){
   if(on&&!GY.granted){
-    if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
-      try{const r=await DeviceMotionEvent.requestPermission();if(r!=='granted'){GY.on=false;gyroUI();$('gStat').textContent='Izin sensor ditolak. Izinkan "Motion & Orientation" di pengaturan browser.';return}}catch(e){GY.on=false;gyroUI();$('gStat').textContent='Izin sensor gagal: '+e.message;return}}
-    GY.granted=true;addEventListener('devicemotion',onMotion)}
-  GY.on=on;GY.last=0;saveGyro();gyroUI()}
+    const m=await reqPerm(window.DeviceMotionEvent),o=await reqPerm(window.DeviceOrientationEvent);
+    GY.denied=!m&&!o; // keep listening anyway: some browsers report denied but still deliver events
+    GY.granted=true;addEventListener('devicemotion',onMotion);addEventListener('deviceorientation',onOrient)}
+  GY.on=on;GY.last=0;GY.prevO=null;GY.enabledAt=performance.now();saveGyro();gyroUI();
+  if(on)setTimeout(()=>{if(GY.on&&!GY.seen){$('gStat').textContent=(GY.denied?'Izin sensor ditolak. ':'')+'Sensor tidak mengirim data. iPhone: pakai Safari & aktifkan Settings › Safari › Motion & Orientation Access. Android: pastikan halaman dibuka via https.';flashMsg('Gyro: sensor tidak mengirim data',3)}},2500)}
 function screenAngle(){return ((screen.orientation&&screen.orientation.angle)!=null?screen.orientation.angle:(window.orientation||0))%360}
-function onMotion(e){const r=e.rotationRate;if(!r||r.beta==null)return;GY.seen=true;
-  const now=performance.now();const dt=GY.last?Math.min(.1,(now-GY.last)/1000):0;GY.last=now;if(!dt)return;
-  if(!GY.on||R.phase!=='play'||!P.alive||!$('buy').classList.contains('hide'))return;
-  let rx=r.beta,ry=r.gamma,yawR,pitchR;const a=(screenAngle()+360)%360;
-  if(a===90){yawR=rx;pitchR=-ry}else if(a===270){yawR=-rx;pitchR=ry}else if(a===180){yawR=-ry;pitchR=-rx}else{yawR=ry;pitchR=rx}
-  const dz=1.2;yawR=Math.abs(yawR)<dz?0:yawR;pitchR=Math.abs(pitchR)<dz?0:pitchR;
-  const k=GY.sens*(zoomed?.35:1)*Math.PI/180*dt;
-  const dy=yawR*k*(GY.invX?-1:1),dp=pitchR*k*(GY.invY?-1:1);
-  P.yaw+=dy;P.pitch=Math.max(-1.5,Math.min(1.5,P.pitch+dp));
-  A.sway.x=Math.max(-.03,Math.min(.03,A.sway.x+dy*.4))}
+function gyroActive(){return GY.on&&R.phase==='play'&&P.alive&&$('buy').classList.contains('hide')}
+function applyGyro(rx,ry){ // rx,ry = rotation in degrees about device x / y axes
+  let yawD,pitchD;const a=(screenAngle()+360)%360;
+  if(a===90){yawD=rx;pitchD=-ry}else if(a===270){yawD=-rx;pitchD=ry}else if(a===180){yawD=-ry;pitchD=-rx}else{yawD=ry;pitchD=rx}
+  const k=GY.sens*(zoomed?.35:1)*Math.PI/180;
+  const dy=yawD*k*(GY.invX?-1:1),dp=pitchD*k*(GY.invY?-1:1);
+  P.yaw+=dy;P.pitch=Math.max(-1.5,Math.min(1.5,P.pitch+dp));A.sway.x=Math.max(-.03,Math.min(.03,A.sway.x+dy*.4))}
+function onMotion(e){const r=e.rotationRate;if(!r||r.beta==null||r.gamma==null)return;GY.seen=true;GY.useMotion=true;
+  const now=performance.now(),dt=GY.last?Math.min(.1,(now-GY.last)/1000):0;GY.last=now;if(!dt||!gyroActive())return;
+  const dz=1.5;let bx=Math.abs(r.beta)<dz?0:r.beta,gy=Math.abs(r.gamma)<dz?0:r.gamma;applyGyro(bx*dt,gy*dt)}
+function wrap(d){while(d>180)d-=360;while(d<-180)d+=360;return d}
+function onOrient(e){if(e.beta==null)return;if(GY.useMotion){GY.prevO=null;return}GY.seen=true; // fallback when no rotationRate
+  const cur={b:e.beta,g:e.gamma,al:e.alpha||0};const pv=GY.prevO;GY.prevO=cur;if(!pv||!gyroActive())return;
+  let db=wrap(cur.b-pv.b),dg=wrap(cur.g-pv.g);if(Math.abs(cur.g)>80||Math.abs(pv.g)>80)dg=0;
+  if(Math.abs(db)<.05)db=0;if(Math.abs(dg)<.05)dg=0;applyGyro(db,dg)}
 $('gOn').onchange=e=>enableGyro(e.target.checked);
 $('gSens').oninput=e=>{GY.sens=+e.target.value;saveGyro();gyroUI()};
 $('gInvX').onchange=e=>{GY.invX=e.target.checked;saveGyro()};$('gInvY').onchange=e=>{GY.invY=e.target.checked;saveGyro()};
-if(isTouch)bindBtn('tGyro',()=>enableGyro(!GY.on));
+if(isTouch){const g=$('tGyro');g.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation()},{passive:false});g.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();enableGyro(!GY.on)},{passive:false})}
 setInterval(()=>{if(GY.on&&$('gStat'))gyroUI()},1000);
 gyroUI();
 
