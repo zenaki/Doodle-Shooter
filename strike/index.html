@@ -37,7 +37,8 @@ canvas{display:block}
 #tFire{right:24px;bottom:110px;width:88px;height:88px;background:rgba(220,60,40,.35)}
 #tJump{right:130px;bottom:40px}#tUse{right:24px;bottom:220px}#tRel{right:130px;bottom:140px}#tSwap{right:236px;bottom:40px}#tZoom{right:236px;bottom:140px}#tGyro{left:16px;top:126px;width:56px;height:56px;font-size:11px}
 #start,#buyClose{position:sticky;bottom:6px;z-index:2;background:#3a3820;box-shadow:0 0 0 6px rgba(10,12,8,.9)}
-#ver{position:fixed;left:6px;bottom:4px;font-size:10px;color:#cfc8a8;background:rgba(0,0,0,.45);padding:2px 6px;border-radius:4px;pointer-events:none;z-index:50}
+#upd{position:fixed;top:6px;right:6px;z-index:60;background:#e03131;color:#fff;font-size:13px;font-weight:bold;padding:8px 12px;border-radius:6px;display:none;cursor:pointer;box-shadow:0 2px 8px #000}
+#ver{position:fixed;left:6px;top:4px;font-size:10px;color:#cfc8a8;background:rgba(0,0,0,.45);padding:2px 6px;border-radius:4px;pointer-events:none;z-index:50}
 .vbadge{display:inline-block;background:#f0c050;color:#1a1a10;font-weight:bold;font-size:12px;padding:2px 8px;border-radius:10px;margin-bottom:6px;letter-spacing:1px}
 #gyroSet{margin:10px 0;padding:10px 14px;border:1px solid #6a6040;border-radius:6px;font-size:14px;max-width:420px}
 #gyroSet label{display:inline-block;margin:4px 8px}#gyroSet input[type=range]{width:160px;vertical-align:middle}
@@ -47,7 +48,7 @@ canvas{display:block}
 </style>
 </head>
 <body>
-<div id="ver"></div>
+<div id="ver"></div><div id="upd"></div>
 <div id="hud" class="hide">
   <div id="scope"></div><div id="cross"></div><div id="hitm"></div><div id="dmg"></div>
   <div id="top"></div><div id="msg"></div><div id="kill"></div>
@@ -78,8 +79,13 @@ canvas{display:block}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-const VERSION='v1.6',BUILD='23 Okt 2026 18:20';
+const VERSION='v1.7',BUILD='23 Okt 2026 18:25';
 $('vbadge').textContent=VERSION+' · '+BUILD;$('ver').textContent='Strike Zone '+VERSION;
+// auto check for newer version (bypasses GitHub Pages cache)
+function checkUpdate(){fetch(location.pathname+'?nocache='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{const m=t.match(/const VERSION='([^']+)'/);
+  if(m&&m[1]!==VERSION){const u=$('upd');u.textContent='🔄 Update '+m[1]+' tersedia — ketuk untuk muat ulang';u.style.display='block';
+    u.onclick=u.ontouchend=e=>{e&&e.preventDefault();location.replace(location.pathname+'?v='+encodeURIComponent(m[1])+'&t='+Date.now())}}}).catch(()=>{})}
+checkUpdate();setInterval(checkUpdate,60000);
 const isTouch='ontouchstart' in window;document.documentElement.classList.add(isTouch?'is-touch':'is-pc');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x9cc4e4);scene.fog=new THREE.Fog(0x9cc4e4,30,90);
 const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.05,200);
