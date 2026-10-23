@@ -12,5 +12,10 @@ Semua aset pihak ketiga di folder ini berlisensi **CC0 1.0 (Public Domain)**. At
   - `pistol.mp3` ← Walther PPQ (X_39P), `smg.mp3` ← PPSh (P_30P), `rifle.mp3` ← AK-47 (C_28P), `sniper.mp3` ← Tikka T3 (W_29P), `enemy.mp3` ← AR-15 jarak menengah (D_24P)
   - Dipotong ke satu tembakan, mono 44.1 kHz, dinormalisasi, MP3 96 kbps.
 
+## Tekstur (`textures/`)
+- **Poly Haven** — https://polyhaven.com (CC0)
+  - `sand.jpg` ← Aerial Beach 01, `wall.jpg` ← Sandstone Blocks 08, `dark.jpg` ← Beige Wall 001, `crate.jpg` ← Wood Planks, `concrete.jpg` ← Concrete Floor Worn 001
+  - Hanya peta diffuse, diperkecil ke 512×512.
+
 ## Kode pihak ketiga (`../lib/`)
 - `GLTFLoader.js` dari three.js r128 — MIT License, © three.js authors.

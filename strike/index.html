@@ -86,7 +86,7 @@ canvas{display:block}
 <script src="lib/GLTFLoader.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-const VERSION='v1.11',BUILD='23 Okt 2026 23:10';
+const VERSION='v1.12',BUILD='23 Okt 2026 23:20';
 $('vbadge').textContent=VERSION+' · '+BUILD;$('ver').textContent='Strike Zone '+VERSION;
 // auto check for newer version (bypasses GitHub Pages cache)
 function checkUpdate(){fetch(location.pathname+'?nocache='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{const m=t.match(/const VERSION='([^']+)'/);
@@ -107,8 +107,16 @@ function tex(c1,c2,lines){const cv=document.createElement('canvas');cv.width=cv.
   for(let i=0;i<300;i++){g.fillStyle=Math.random()<.5?c2:c1;g.globalAlpha=.25;g.fillRect(Math.random()*64,Math.random()*64,2,2)}g.globalAlpha=1;
   if(lines){g.strokeStyle=c2;g.lineWidth=2;for(let y=0;y<64;y+=16){g.beginPath();g.moveTo(0,y);g.lineTo(64,y);g.stroke();const o=(y/16)%2?0:32;for(let x=o;x<64;x+=32){g.beginPath();g.moveTo(x,y);g.lineTo(x,y+16);g.stroke()}}}
   const t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.magFilter=THREE.NearestFilter;return t}
-const T={sand:tex('#c9b07a','#a88f5c'),wall:tex('#d8c79a','#9b8a60',true),crate:tex('#8a6a3a','#5a4220',true),dark:tex('#7a7060','#555044',true)};
-function mat(t,rx,ry){const m=new THREE.MeshLambertMaterial({map:t.clone()});m.map.needsUpdate=true;m.map.repeat.set(rx,ry);return m}
+const T={concrete:tex('#9a958c','#7a766e'),sand:tex('#c9b07a','#a88f5c'),wall:tex('#d8c79a','#9b8a60',true),crate:tex('#8a6a3a','#5a4220',true),dark:tex('#7a7060','#555044',true)};
+const MATREG=[];
+function mat(t,rx,ry){const m=new THREE.MeshLambertMaterial({map:t.clone()});m.map.needsUpdate=true;m.map.repeat.set(rx,ry);
+  const key=Object.keys(T).find(k=>T[k]===t);MATREG.push({m,key,rx,ry});return m}
+// real textures (CC0, Poly Haven) replace procedural ones when loaded
+const TEX_SCALE={sand:.8,wall:1.2,dark:.8,crate:1,concrete:.4};
+function loadRealTextures(){const L=new THREE.TextureLoader();
+  for(const k of ['sand','wall','dark','crate','concrete'])L.load('assets/textures/'+k+'.jpg',tx=>{
+    tx.wrapS=tx.wrapT=THREE.RepeatWrapping;tx.encoding=THREE.LinearEncoding;tx.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+    for(const r of MATREG)if(r.key===k){const t=tx.clone();t.needsUpdate=true;t.repeat.set(Math.max(1,r.rx*TEX_SCALE[k]),Math.max(1,r.ry*TEX_SCALE[k]));r.m.map=t;r.m.color.set(0xffffff);r.m.needsUpdate=true}},undefined,()=>{})}
 
 // ---- map: walls as AABB [x,z,w,d,h,type]
 const walls=[],wallMeshes=[];
@@ -127,8 +135,9 @@ box(0,22,8,1,5,'dark');
 box(26,30,6,2,1.2,'crate');
 // bomb site A
 const SITE={x:-26,z:-30,r:5};
+const sitePad=new THREE.Mesh(new THREE.PlaneGeometry(SITE.r*2.4,SITE.r*2.4),mat(T.concrete,3,3));sitePad.rotation.x=-Math.PI/2;sitePad.position.set(SITE.x,.01,SITE.z);scene.add(sitePad);
 const siteMark=new THREE.Mesh(new THREE.CircleGeometry(SITE.r,32),new THREE.MeshBasicMaterial({color:0xcc2222,transparent:true,opacity:.25}));
-siteMark.rotation.x=-Math.PI/2;siteMark.position.set(SITE.x,0.02,SITE.z);scene.add(siteMark);
+siteMark.rotation.x=-Math.PI/2;siteMark.position.set(SITE.x,0.02,SITE.z);scene.add(siteMark);loadRealTextures();
 (function(){const cv=document.createElement('canvas');cv.width=cv.height=128;const g=cv.getContext('2d');g.fillStyle='#c22';g.font='bold 100px Verdana';g.textAlign='center';g.fillText('A',64,100);
   const s=new THREE.Mesh(new THREE.PlaneGeometry(3,3),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv),transparent:true}));s.position.set(-26,3.5,-39.4);scene.add(s)})();
 

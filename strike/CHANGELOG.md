@@ -3,6 +3,11 @@
 Semua perubahan penting pada game Strike Zone dicatat di sini.
 Game: https://zenaki.github.io/Doodle-Shooter/strike/
 
+## v1.12 — 23 Okt 2026
+### Ditambahkan
+- Tekstur asli (CC0, Poly Haven): pasir untuk lantai, batu pasir untuk dinding, plester untuk dinding tengah, papan kayu untuk peti, beton untuk area zona bom A.
+- Tekstur dikecilkan ke 512px (total ±50 KB) agar ringan di HP; tekstur prosedural lama tetap jadi cadangan.
+
 ## v1.11 — 23 Okt 2026
 ### Ditambahkan
 - Model 3D senjata asli (CC0, Quaternius Ultimate Gun Pack): pistol, SMG, rifle gaya AK, sniper dengan scope.
