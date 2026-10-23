@@ -3,6 +3,15 @@
 Semua perubahan penting pada game Strike Zone dicatat di sini.
 Game: https://zenaki.github.io/Doodle-Shooter/strike/
 
+## v1.15 — 24 Okt 2026
+### Ditambahkan
+- **Pilih karakter** di menu awal: Tentara, Penyerbu, atau Hazmat, dengan pratinjau 3D berputar. Warna sarung tangan di tangan mengikuti karakter; musuh memakai dua karakter lainnya.
+- **Peluru melesat (tracer):** jejak peluru terlihat terbang dari senjata ke sasaran, untuk pemain maupun bot. Peluru bot yang meleset di dekatmu berdesing.
+- **Indikator arah tembakan:** busur merah di sekitar bidikan menunjukkan dari arah mana kamu terkena (tembakan, ledakan, api).
+- **Indikator granat:** ikon 💣/🔥/🚀 di sekitar bidikan menunjuk ke granat/roket yang bisa melukaimu. Ikon hanya muncul bila kamu berada dalam radius ledakan dan tidak terlindung dinding; makin dekat makin besar dan berkedip merah.
+### Diubah
+- Peringatan teks "⚠ GRANAT!" diganti indikator arah + bunyi bip.
+
 ## v1.14 — 24 Okt 2026
 ### Diubah
 - Semua senjata lama diganti 16 senjata toon (CC0, Quaternius Toon Shooter Game Kit) agar gayanya seragam dengan karakter bot.

@@ -7,9 +7,9 @@ Semua aset pihak ketiga di folder ini berlisensi **CC0 1.0 (Public Domain)**. At
   - pistol ← Pistol, revsmall ← Revolver_Small, revolver ← Revolver, smg ← SMG, shotgun ← Shotgun, rifle ← AK, sniper ← Sniper, sniper2 ← Sniper_2, cannon ← ShortCannon, launcher ← GrenadeLauncher, rocket ← RocketLauncher, knife ← Knife_1, knife2 ← Knife_2, shovel ← Shovel, nade_he ← Grenade, nade_fire ← FireGrenade
   - Dikonversi dari glTF ke GLB dan dikompres.
 
-## Karakter (`models/soldier.glb`)
+## Karakter (`models/soldier.glb`, `enemy.glb`, `hazmat.glb`)
 - **Toon Shooter Game Kit** (Des 2022) oleh **Quaternius** — https://quaternius.com/packs/toonshootergamekit.html (CC0)
-  - Character_Soldier; animasi yang dipakai: Idle, Idle_Shoot, Walk, Walk_Shoot, Run, Run_Gun, Run_Shoot, HitReact, Death. Senjata lain dan animasi tak terpakai dihapus, lalu dikompres.
+  - Character_Soldier, Character_Enemy, Character_Hazmat; animasi yang dipakai: Idle, Idle_Shoot, Walk, Walk_Shoot, Run, Run_Gun, Run_Shoot, HitReact, Death. Senjata lain dan animasi tak terpakai dihapus, lalu dikompres.
 
 ## Suara tembakan (`sounds/`)
 - **The Free Firearm Sound Library** oleh Ben Jaszczak, Brian Nelson, Kevin Heras, Matthew Nanney — https://opengameart.org/content/the-free-firearm-sound-library
