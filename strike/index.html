@@ -25,7 +25,7 @@ canvas{display:block}
 #dmg{position:absolute;inset:0;background:radial-gradient(transparent 50%,rgba(255,0,0,.6));opacity:0;transition:opacity .3s}
 .panel{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:rgba(10,12,8,.88);text-align:center;padding:16px}
 .panel>:first-child{margin-top:auto!important}.panel>:last-child{margin-bottom:auto!important}
-@media (max-height:520px){.panel{padding:8px 12px}.panel h1{font-size:24px!important;margin:0 0 2px}.panel p{font-size:12px;margin:2px}#gyroSet{margin:4px 0;padding:6px 10px;font-size:12px}.btn{font-size:14px;padding:7px 14px;margin:3px;min-width:160px}#buyList{display:flex;flex-wrap:wrap;justify-content:center}#buyList br{display:none}}
+@media (max-height:520px){.panel{padding:6px 10px}.panel .intro{display:none}#gameSet{margin:4px 0;padding:6px 10px;font-size:12px;max-width:none}.sets{flex-wrap:nowrap}.sets>div{flex:1;min-width:0}#gyroSet input[type=range],#eCount{width:110px!important}.panel h1{font-size:24px!important;margin:0 0 2px}.panel p{font-size:12px;margin:2px}#gyroSet{margin:4px 0;padding:6px 10px;font-size:12px}.btn{font-size:14px;padding:7px 14px;margin:3px;min-width:160px}#buyList{display:flex;flex-wrap:wrap;justify-content:center}#buyList br{display:none}}
 .is-touch .pc-only,.is-pc .mob-only{display:none}
 .panel h1{font-size:40px;margin:0 0 6px;color:#f0c050;letter-spacing:3px}
 .panel p{margin:4px;font-size:14px;max-width:520px}
@@ -41,6 +41,8 @@ canvas{display:block}
 #tReset{position:fixed;top:4px;right:6px;z-index:55;font-family:inherit;font-size:12px;font-weight:bold;padding:6px 10px;border:1px solid #f0c050;background:rgba(0,0,0,.5);color:#f0c050;border-radius:5px;display:none}
 #ver{position:fixed;left:6px;top:4px;font-size:10px;color:#cfc8a8;background:rgba(0,0,0,.45);padding:2px 6px;border-radius:4px;pointer-events:none;z-index:50}
 .vbadge{display:inline-block;background:#f0c050;color:#1a1a10;font-weight:bold;font-size:12px;padding:2px 8px;border-radius:10px;margin-bottom:6px;letter-spacing:1px}
+#gameSet{margin:10px 0;padding:10px 14px;border:1px solid #6a6040;border-radius:6px;font-size:14px;max-width:420px}
+.sets{display:flex;flex-wrap:wrap;justify-content:center;gap:0 10px;align-items:stretch}
 #gyroSet{margin:10px 0;padding:10px 14px;border:1px solid #6a6040;border-radius:6px;font-size:14px;max-width:420px}
 #gyroSet label{display:inline-block;margin:4px 8px}#gyroSet input[type=range]{width:160px;vertical-align:middle}
 #tBuy{left:16px;top:60px;width:56px;height:56px;font-size:11px}
@@ -63,16 +65,17 @@ canvas{display:block}
 </div>
 <div id="menu" class="panel">
   <h1>STRIKE ZONE</h1><div class="vbadge" id="vbadge"></div>
-  <p>Kamu tim <b>Penyerang</b>. Pasang bom di zona <b style="color:#f55">A</b> atau habisi semua <b>Penjaga</b>. Ronde pertama yang mencapai 8 kemenangan juara.</p>
+  <p class="intro">Kamu tim <b>Penyerang</b>. Pasang bom di zona <b style="color:#f55">A</b> atau habisi semua <b>Penjaga</b>. Ronde pertama yang mencapai 8 kemenangan juara.</p>
   <p class="pc-only">PC: WASD gerak · Mouse bidik · Klik tembak · Spasi lompat · R reload · E (tahan) pasang bom · B beli · 1/2/scroll ganti senjata · Klik kanan zoom (sniper)</p>
-  <p class="mob-only">HP: joystick kiri gerak · geser layar kanan bidik · tombol FIRE/JUMP/BOM</p>
-  <div id="gyroSet"><b>🎯 Gyro Aim</b> (bidik dengan memiringkan/memutar HP)<br>
+  <p class="mob-only intro">HP: joystick kiri gerak · geser layar kanan bidik · tombol FIRE/JUMP/BOM</p>
+  <div class="sets"><div id="gyroSet"><b>🎯 Gyro Aim</b> (bidik dengan memiringkan/memutar HP)<br>
     <label><input type="checkbox" id="gOn"> Aktif</label>
     <label>Sensitivitas <input type="range" id="gSens" min="0.3" max="3" step="0.1" value="1.2"> <span id="gSensV">1.2</span></label><br>
     <label><input type="checkbox" id="gInvX"> Balik horizontal</label><label><input type="checkbox" id="gInvY"> Balik vertikal</label>
     <div id="gStat" style="font-size:12px;color:#aaa"></div></div>
-  <div id="gameSet" style="margin:4px 0;font-size:14px"><b>👥 Jumlah musuh:</b> <input type="range" id="eCount" min="0" max="10" step="1" value="0" style="width:150px;vertical-align:middle"> <span id="eCountV">Otomatis</span>
+  <div id="gameSet"><b>⚔️ Kesulitan:</b> <span id="diffBtns"></span><br><b>👥 Jumlah musuh:</b> <input type="range" id="eCount" min="0" max="10" step="1" value="0" style="width:150px;vertical-align:middle"> <span id="eCountV">Otomatis</span>
     <br><button class="btn" id="resetCfg" style="min-width:0;font-size:12px;padding:4px 10px">↺ Reset pengaturan</button></div>
+  </div>
   <button class="btn" id="start">MULAI</button>
 </div>
 <div id="buy" class="panel hide">
@@ -82,7 +85,7 @@ canvas{display:block}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-const VERSION='v1.9',BUILD='23 Okt 2026 18:35';
+const VERSION='v2.0',BUILD='23 Okt 2026 18:55';
 $('vbadge').textContent=VERSION+' · '+BUILD;$('ver').textContent='Strike Zone '+VERSION;
 // auto check for newer version (bypasses GitHub Pages cache)
 function checkUpdate(){fetch(location.pathname+'?nocache='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{const m=t.match(/const VERSION='([^']+)'/);
@@ -278,7 +281,7 @@ function makeBot(x,z,i){const g=new THREE.Group();
   const legs=new THREE.Mesh(new THREE.BoxGeometry(.5,.5,.3),new THREE.MeshLambertMaterial({color:0x223322}));legs.position.y=.25;g.add(legs);
   const bg=new THREE.Mesh(new THREE.BoxGeometry(.08,.08,.5),MAT.metal);bg.position.set(.25,1.2,-.3);g.add(bg);
   g.position.set(x,0,z);scene.add(g);
-  const b={g,head,body,hp:100,alive:true,target:null,cd:1+Math.random(),seen:0,name:'Penjaga '+(i+1),react:.35+Math.random()*.3,acc:.5+Math.random()*.2};
+  const b={g,head,body,hp:100,alive:true,target:null,cd:1+Math.random(),seen:0,name:'Penjaga '+(i+1),react:D().react+Math.random()*.3,acc:D().acc+Math.random()*.15};b.hp=D().hp;
   [body,head,legs,helm].forEach(m=>m.userData.bot=b);b.parts=[body,head,legs,helm];bots.push(b);return b}
 
 // ---- round state
@@ -422,21 +425,21 @@ function spark(p,c){const m=new THREE.Mesh(new THREE.SphereGeometry(.06,4,4),new
 function updateBots(dt){const eye=P.pos.clone();
   for(const b of bots){if(!b.alive){if(b.dieT!==undefined&&b.dieT<1){b.dieT=Math.min(1,b.dieT+dt*2.5);const e=1-Math.pow(1-b.dieT,3);b.g.rotation.x=-e*Math.PI/2;b.g.position.y=e*.2}continue}const bp=b.g.position;const head=new THREE.Vector3(bp.x,1.8,bp.z);
     const toP=new THREE.Vector3(eye.x-bp.x,0,eye.z-bp.z),dist=toP.length();
-    let sees=P.alive&&dist<55&&losClear(head,eye);
+    let sees=P.alive&&dist<D().sight&&losClear(head,eye);
     if(sees){b.seen+=dt;b.target=P.pos.clone()}else b.seen=Math.max(0,b.seen-dt*.5);
     if(R.bomb&&!sees)b.target=new THREE.Vector3(R.bomb.x,0,R.bomb.z);
     if(!b.target||(Math.hypot(b.target.x-bp.x,b.target.z-bp.z)<1.5&&!sees)){const p=PATROL[Math.floor(Math.random()*PATROL.length)];b.target=new THREE.Vector3(p[0],0,p[1])}
     const tgt=sees?eye:b.target;const ang=Math.atan2(tgt.x-bp.x,tgt.z-bp.z);b.g.rotation.y=ang+Math.PI;
     // move (stop & shoot when seeing)
-    if(!sees||dist>18){const sp=(sees?2.2:3)*dt;bp.x+=Math.sin(ang)*sp;bp.z+=Math.cos(ang)*sp;collide(bp,.4);b.walk=(b.walk||0)+dt*9;b.g.position.y=Math.abs(Math.sin(b.walk))*.05;
+    if(!sees||dist>18){const sp=(sees?2.2:3)*D().speed*dt;bp.x+=Math.sin(ang)*sp;bp.z+=Math.cos(ang)*sp;collide(bp,.4);b.walk=(b.walk||0)+dt*9;b.g.position.y=Math.abs(Math.sin(b.walk))*.05;
       if(Math.sin(b.walk)*Math.sin(b.walk-dt*9)<0){const v=volOf(bp.x,bp.z,22);if(v>0)SFX.step(v*.7,panOf(bp.x,bp.z))}}
     // defuse
     if(R.bomb&&!R.bomb.defused&&Math.hypot(R.bomb.x-bp.x,R.bomb.z-bp.z)<1.6&&!sees){b.defuse=(b.defuse||0)+dt;if(b.defuse>6){R.bomb.defused=true;endRound(false,'Bom berhasil dijinakkan')}}else b.defuse=0;
     // shoot
-    b.cd-=dt;if(sees&&b.seen>b.react&&b.cd<=0){b.cd=.18+Math.random()*.25;
+    b.cd-=dt;if(sees&&b.seen>b.react&&b.cd<=0){b.cd=(.18+Math.random()*.25)*D().rate;
       const hitChance=b.acc*Math.max(.15,1-dist/45)*(P.pos.y>1.65?.6:1);
       spark(new THREE.Vector3(bp.x+Math.sin(ang)*.4,1.3,bp.z+Math.cos(ang)*.4),0xffdd66);SFX.shot('rifle',.25+volOf(bp.x,bp.z)*.6,panOf(bp.x,bp.z));
-      if(Math.random()<hitChance)hurtPlayer(12+Math.random()*12,b)}}}
+      if(Math.random()<hitChance)hurtPlayer((12+Math.random()*12)*D().dmg,b)}}}
 function hurtPlayer(d,b){if(!P.alive)return;if(P.armor>0){const a=d*.5;P.armor=Math.max(0,P.armor-a);d-=a*.8}
   P.hp-=d;SFX.hurt();A.punch-=.03;A.side+=(Math.random()-.5)*.04;$('dmg').style.opacity=.8;setTimeout(()=>$('dmg').style.opacity=0,150);
   if(P.hp<=0){P.hp=0;P.alive=false;SFX.die();setZoom(false);feed(b.name+' ➜ Kamu');if(!R.bomb)endRound(false,'Kamu tewas');else flashMsg('Kamu tewas — bom masih aktif!',3)}updateHUD()}
@@ -481,7 +484,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
       else{R.time-=dt;if(R.time<=0)endRound(false,'Waktu habis')}
       if(!P.alive&&R.bomb)camera.position.set(R.bomb.x+6,8,R.bomb.z+6),camera.lookAt(R.bomb.x,0,R.bomb.z);}
     const alive=bots.filter(b=>b.alive).length;
-    $('top').innerHTML='Penyerang <b>'+R.score[0]+'</b> : <b>'+R.score[1]+'</b> Penjaga · '+(R.bomb&&!R.bomb.defused?'<span style="color:#f55">💣 '+fmt(R.bomb.t)+'</span>':fmt(R.time))+' · Musuh: '+alive+(R.buyTime>0?' · Beli: '+Math.ceil(R.buyTime):'');
+    $('top').innerHTML='['+D().label+'] Penyerang <b>'+R.score[0]+'</b> : <b>'+R.score[1]+'</b> Penjaga · '+(R.bomb&&!R.bomb.defused?'<span style="color:#f55">💣 '+fmt(R.bomb.t)+'</span>':fmt(R.time))+' · Musuh: '+alive+(R.buyTime>0?' · Beli: '+Math.ceil(R.buyTime):'');
     if(msgT>0){msgT-=dt;if(msgT<=0)$('msg').innerHTML=''}
     for(let i=sparks.length-1;i>=0;i--){sparks[i].t-=dt;if(sparks[i].t<=0){scene.remove(sparks[i].m);sparks.splice(i,1)}}
   }
@@ -490,11 +493,18 @@ requestAnimationFrame(loop);
 camera.position.set(0,12,40);camera.lookAt(0,0,0);
 
 // ---- config + reset
-const CFG={enemies:0};try{Object.assign(CFG,JSON.parse(localStorage.getItem('sz_cfg')||'{}'))}catch(e){}
+const DIFF={
+  mudah:{label:'Mudah',acc:.25,react:.9,dmg:.6,hp:70,speed:.8,rate:1.5,sight:35},
+  normal:{label:'Normal',acc:.45,react:.5,dmg:1,hp:100,speed:1,rate:1,sight:50},
+  sulit:{label:'Sulit',acc:.62,react:.3,dmg:1.25,hp:120,speed:1.15,rate:.8,sight:60},
+  ahli:{label:'Ahli',acc:.8,react:.15,dmg:1.5,hp:150,speed:1.3,rate:.65,sight:75}};
+function D(){return DIFF[CFG.diff]||DIFF.normal}
+const CFG={enemies:0,diff:'normal'};try{Object.assign(CFG,JSON.parse(localStorage.getItem('sz_cfg')||'{}'))}catch(e){}
 function saveCfg(){try{localStorage.setItem('sz_cfg',JSON.stringify(CFG))}catch(e){}}
-function cfgUI(){$('eCount').value=CFG.enemies;$('eCountV').textContent=CFG.enemies>0?CFG.enemies+' musuh':'Otomatis (2–5, naik tiap ronde)'}
+function cfgUI(){const db=$('diffBtns');db.innerHTML='';for(const k in DIFF){const b=document.createElement('button');b.className='btn';b.style.cssText='min-width:0;font-size:12px;padding:4px 10px;margin:2px;'+(CFG.diff===k?'background:#f0c050;color:#1a1a10':'');b.textContent=DIFF[k].label;b.onclick=()=>{CFG.diff=k;saveCfg();cfgUI()};db.appendChild(b)}
+  $('eCount').value=CFG.enemies;$('eCountV').textContent=CFG.enemies>0?CFG.enemies+' musuh':'Otomatis (2–5, naik tiap ronde)'}
 $('eCount').oninput=e=>{CFG.enemies=+e.target.value;saveCfg();cfgUI()};cfgUI();
-$('resetCfg').onclick=()=>{CFG.enemies=0;saveCfg();cfgUI();Object.assign(GY,{on:false,sens:1.2,invX:false,invY:false});saveGyro();gyroUI()};
+$('resetCfg').onclick=()=>{CFG.enemies=0;CFG.diff='normal';saveCfg();cfgUI();Object.assign(GY,{on:false,sens:1.2,invX:false,invY:false});saveGyro();gyroUI()};
 function resetMatch(){clearTimeout(R.timer);R.phase='menu';R.score=[0,0];R.round=0;P.money=800;P.kills=0;P.alive=false;P.armor=0;
   P.slots={1:null,2:{type:'pistol',mag:12,res:48}};setZoom(false);$('buy').classList.add('hide');$('kill').innerHTML='';startRound();flashMsg('Pertandingan diulang',1.5)}
 function onReset(e){e&&e.preventDefault();e&&e.stopPropagation();if(R.phase==='menu')return;
