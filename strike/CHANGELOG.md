@@ -3,6 +3,14 @@
 Semua perubahan penting pada game Strike Zone dicatat di sini.
 Game: https://zenaki.github.io/Doodle-Shooter/strike/
 
+## v1.18 — 24 Okt 2026
+### Ditambahkan
+- **Layar setelah tewas** dengan tombol **▶ MAIN LAGI** (langsung ronde berikutnya) dan **🎬 TONTON REPLAY**. Ronde tidak lagi lanjut otomatis bila kamu tewas.
+- **Replay ronde**: seluruh ronde direkam (posisi, arah, animasi kamu dan semua musuh, serta bom) lalu bisa diputar ulang.
+  - **Kamera bebas (free roam)**: terbang ke mana saja — PC: WASD + mouse, Spasi naik, C turun, Shift lebih cepat; HP: joystick kiri + geser layar kanan, tombol NAIK/TURUN.
+  - **Garis ke langit** di setiap karakter (hijau = kamu, merah = musuh, redup bila sudah tewas) plus lingkaran di tanah agar terlihat dari atas.
+  - Kontrol: putar/jeda, kecepatan 0.5× / 1× / 2×, geser timeline, KELUAR (kembali ke layar tewas).
+
 ## v1.17 — 24 Okt 2026
 ### Diperbaiki
 - **Bot tidak lagi tersangkut.** Bot sekarang memakai pencarian jalur (A* di grid peta 80×80) yang memutari dinding dan properti, ditambah deteksi macet yang menghitung ulang jalur atau memilih titik patroli lain. Dalam simulasi 3 menit dengan 10 bot, waktu tersangkut turun dari 89% menjadi ±1%.
