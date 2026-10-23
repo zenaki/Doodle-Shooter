@@ -37,6 +37,8 @@ canvas{display:block}
 #tFire{right:24px;bottom:110px;width:88px;height:88px;background:rgba(220,60,40,.35)}
 #tJump{right:130px;bottom:40px}#tUse{right:24px;bottom:220px}#tRel{right:130px;bottom:140px}#tSwap{right:236px;bottom:40px}#tZoom{right:236px;bottom:140px}#tGyro{left:16px;top:126px;width:56px;height:56px;font-size:11px}
 #start,#buyClose{position:sticky;bottom:6px;z-index:2;background:#3a3820;box-shadow:0 0 0 6px rgba(10,12,8,.9)}
+#ver{position:fixed;left:6px;bottom:4px;font-size:10px;color:#cfc8a8;background:rgba(0,0,0,.45);padding:2px 6px;border-radius:4px;pointer-events:none;z-index:50}
+.vbadge{display:inline-block;background:#f0c050;color:#1a1a10;font-weight:bold;font-size:12px;padding:2px 8px;border-radius:10px;margin-bottom:6px;letter-spacing:1px}
 #gyroSet{margin:10px 0;padding:10px 14px;border:1px solid #6a6040;border-radius:6px;font-size:14px;max-width:420px}
 #gyroSet label{display:inline-block;margin:4px 8px}#gyroSet input[type=range]{width:160px;vertical-align:middle}
 #tBuy{left:16px;top:60px;width:56px;height:56px;font-size:11px}
@@ -45,6 +47,7 @@ canvas{display:block}
 </style>
 </head>
 <body>
+<div id="ver"></div>
 <div id="hud" class="hide">
   <div id="scope"></div><div id="cross"></div><div id="hitm"></div><div id="dmg"></div>
   <div id="top"></div><div id="msg"></div><div id="kill"></div>
@@ -57,7 +60,7 @@ canvas{display:block}
   <div class="tbtn" id="tUse">BOM</div><div class="tbtn" id="tRel">RELOAD</div><div class="tbtn" id="tBuy">BELI</div><div class="tbtn" id="tSwap">GANTI</div><div class="tbtn" id="tZoom">ZOOM</div><div class="tbtn" id="tGyro">GYRO<br>OFF</div>
 </div>
 <div id="menu" class="panel">
-  <h1>STRIKE ZONE</h1>
+  <h1>STRIKE ZONE</h1><div class="vbadge" id="vbadge"></div>
   <p>Kamu tim <b>Penyerang</b>. Pasang bom di zona <b style="color:#f55">A</b> atau habisi semua <b>Penjaga</b>. Ronde pertama yang mencapai 8 kemenangan juara.</p>
   <p class="pc-only">PC: WASD gerak · Mouse bidik · Klik tembak · Spasi lompat · R reload · E (tahan) pasang bom · B beli · 1/2/scroll ganti senjata · Klik kanan zoom (sniper)</p>
   <p class="mob-only">HP: joystick kiri gerak · geser layar kanan bidik · tombol FIRE/JUMP/BOM</p>
@@ -75,6 +78,8 @@ canvas{display:block}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
+const VERSION='v1.6',BUILD='23 Okt 2026 18:20';
+$('vbadge').textContent=VERSION+' · '+BUILD;$('ver').textContent='Strike Zone '+VERSION;
 const isTouch='ontouchstart' in window;document.documentElement.classList.add(isTouch?'is-touch':'is-pc');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x9cc4e4);scene.fog=new THREE.Fog(0x9cc4e4,30,90);
 const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.05,200);
