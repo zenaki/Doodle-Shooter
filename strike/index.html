@@ -84,9 +84,10 @@ canvas{display:block}
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="lib/GLTFLoader.js"></script>
+<script src="lib/SkeletonUtils.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-const VERSION='v1.12',BUILD='23 Okt 2026 23:20';
+const VERSION='v1.13',BUILD='23 Okt 2026 23:40';
 $('vbadge').textContent=VERSION+' · '+BUILD;$('ver').textContent='Strike Zone '+VERSION;
 // auto check for newer version (bypasses GitHub Pages cache)
 function checkUpdate(){fetch(location.pathname+'?nocache='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{const m=t.match(/const VERSION='([^']+)'/);
@@ -304,6 +305,22 @@ const P={pos:new THREE.Vector3(),vy:0,yaw:0,pitch:0,hp:100,armor:0,money:800,ali
 function wep(){return P.slots[P.cur]}
 // ---- bots
 const bots=[];
+// ---- animated soldier (CC0, Quaternius Toon Shooter Game Kit)
+const SOLDIER={scene:null,clips:{}};
+if(THREE.GLTFLoader)new THREE.GLTFLoader().load('assets/models/soldier.glb',gl=>{
+  gl.scene.traverse(o=>{if(o.isMesh){const conv=mt=>{const n=new THREE.MeshLambertMaterial({color:mt.color.clone().convertLinearToSRGB()});n.skinning=!!o.isSkinnedMesh;return n};
+    o.material=Array.isArray(o.material)?o.material.map(conv):conv(o.material);o.frustumCulled=false}});
+  const b=new THREE.Box3().setFromObject(gl.scene);SOLDIER.h=b.max.y-b.min.y;SOLDIER.scene=gl.scene;gl.animations.forEach(a=>SOLDIER.clips[a.name]=a);
+  bots.forEach(attachSoldier)},undefined,()=>{});
+function attachSoldier(b){if(!SOLDIER.scene||b.model||!THREE.SkeletonUtils)return;
+  const m=THREE.SkeletonUtils.clone(SOLDIER.scene);m.scale.setScalar(2.05/SOLDIER.h);m.rotation.y=Math.PI;b.g.add(m);b.model=m;
+  b.parts.forEach(p=>p.visible=false);b.gunMesh&&(b.gunMesh.visible=false);
+  b.mixer=new THREE.AnimationMixer(m);b.acts={};for(const k in SOLDIER.clips)b.acts[k]=b.mixer.clipAction(SOLDIER.clips[k]);
+  const d=b.acts.Death;if(d){d.setLoop(THREE.LoopOnce);d.clampWhenFinished=true}
+  const h=b.acts.HitReact;if(h){h.setLoop(THREE.LoopOnce)}
+  b.mixer.update(Math.random());playAnim(b,'Idle')}
+function playAnim(b,name,fade=.2){if(!b.acts||b.anim===name||!b.acts[name])return;const nx=b.acts[name];nx.reset().play();
+  if(b.anim&&b.acts[b.anim])b.acts[b.anim].crossFadeTo(nx,fade,false);b.anim=name}
 function makeBot(x,z,i){const g=new THREE.Group();
   const body=new THREE.Mesh(new THREE.BoxGeometry(.6,1.1,.35),new THREE.MeshLambertMaterial({color:0x2f4f7f}));body.position.y=1.05;g.add(body);
   const head=new THREE.Mesh(new THREE.BoxGeometry(.35,.35,.35),new THREE.MeshLambertMaterial({color:0xd9b38c}));head.position.y=1.8;g.add(head);
@@ -312,7 +329,7 @@ function makeBot(x,z,i){const g=new THREE.Group();
   const bg=new THREE.Mesh(new THREE.BoxGeometry(.08,.08,.5),MAT.metal);bg.position.set(.25,1.2,-.3);g.add(bg);
   g.position.set(x,0,z);scene.add(g);
   const b={g,head,body,hp:100,alive:true,target:null,cd:1+Math.random(),seen:0,name:'Penjaga '+(i+1),react:D().react+Math.random()*.3,acc:D().acc+Math.random()*.15};b.hp=D().hp;
-  [body,head,legs,helm].forEach(m=>m.userData.bot=b);b.parts=[body,head,legs,helm];bots.push(b);return b}
+  [body,head,legs,helm].forEach(m=>m.userData.bot=b);b.parts=[body,head,legs,helm];b.gunMesh=bg;bots.push(b);attachSoldier(b);return b}
 
 // ---- round state
 const R={score:[0,0],time:0,phase:'menu',bomb:null,planting:0,round:0,buyTime:0};
@@ -444,8 +461,8 @@ function shoot(){const w=wep(),W=WEAPONS[w.type];if(P.cd>0||P.reload>0||A.swap>.
   if(hit){const b=hit.object.userData.bot;
     spark(hit.point,b?0xaa0000:0x998866);if(!b&&Math.random()<.3)SFX.ricochet(panOf(hit.point.x,hit.point.z),volOf(hit.point.x,hit.point.z,30)*.6);
     if(b){SFX.hit(hit.object===b.head);$('hitm').style.opacity=1;setTimeout(()=>$('hitm').style.opacity=0,90)}
-    if(b){let d=W.dmg;if(hit.object===b.head)d*=3.5;else if(hit.point.y<.6)d*=.75;b.hp-=d;b.seen=3;b.target=P.pos.clone();
-      if(b.hp<=0&&b.alive){b.alive=false;b.dieT=0;SFX.botDie(panOf(b.g.position.x,b.g.position.z),volOf(b.g.position.x,b.g.position.z));P.kills++;P.money=Math.min(16000,P.money+300);
+    if(b){let d=W.dmg;if(hit.object===b.head)d*=3.5;else if(hit.point.y<.6)d*=.75;b.hp-=d;b.seen=3;b.target=P.pos.clone();if(b.acts&&b.acts.HitReact&&b.hp>0){const h=b.acts.HitReact;h.reset();h.setEffectiveWeight(.8);h.play();b.hitT=.35}
+      if(b.hp<=0&&b.alive){b.alive=false;b.dieT=0;if(b.acts){b.anim=null;for(const k in b.acts)if(k!=='Death')b.acts[k].fadeOut(.15);b.acts.Death.reset().fadeIn(.1).play()}SFX.botDie(panOf(b.g.position.x,b.g.position.z),volOf(b.g.position.x,b.g.position.z));P.kills++;P.money=Math.min(16000,P.money+300);
         feed('Kamu ➜ '+b.name+(hit.object===b.head?' (headshot)':''));if(bots.every(x=>!x.alive))endRound(true,'Semua penjaga tumbang')}}}
   updateHUD()}
 const sparks=[];
@@ -453,7 +470,7 @@ function spark(p,c){const m=new THREE.Mesh(new THREE.SphereGeometry(.06,4,4),new
 
 // ---- bots logic
 function updateBots(dt){const eye=P.pos.clone();
-  for(const b of bots){if(!b.alive){if(b.dieT!==undefined&&b.dieT<1){b.dieT=Math.min(1,b.dieT+dt*2.5);const e=1-Math.pow(1-b.dieT,3);b.g.rotation.x=-e*Math.PI/2;b.g.position.y=e*.2}continue}const bp=b.g.position;const head=new THREE.Vector3(bp.x,1.8,bp.z);
+  for(const b of bots){if(b.mixer)b.mixer.update(dt);if(!b.alive){if(b.model)continue;if(b.dieT!==undefined&&b.dieT<1){b.dieT=Math.min(1,b.dieT+dt*2.5);const e=1-Math.pow(1-b.dieT,3);b.g.rotation.x=-e*Math.PI/2;b.g.position.y=e*.2}continue}const bp=b.g.position;const head=new THREE.Vector3(bp.x,1.8,bp.z);
     const toP=new THREE.Vector3(eye.x-bp.x,0,eye.z-bp.z),dist=toP.length();
     let sees=P.alive&&dist<D().sight&&losClear(head,eye);
     if(sees){b.seen+=dt;b.target=P.pos.clone()}else b.seen=Math.max(0,b.seen-dt*.5);
@@ -461,11 +478,12 @@ function updateBots(dt){const eye=P.pos.clone();
     if(!b.target||(Math.hypot(b.target.x-bp.x,b.target.z-bp.z)<1.5&&!sees)){const p=PATROL[Math.floor(Math.random()*PATROL.length)];b.target=new THREE.Vector3(p[0],0,p[1])}
     const tgt=sees?eye:b.target;const ang=Math.atan2(tgt.x-bp.x,tgt.z-bp.z);b.g.rotation.y=ang+Math.PI;
     // move (stop & shoot when seeing)
-    if(!sees||dist>18){const sp=(sees?2.2:3)*D().speed*dt;bp.x+=Math.sin(ang)*sp;bp.z+=Math.cos(ang)*sp;collide(bp,.4);b.walk=(b.walk||0)+dt*9;b.g.position.y=Math.abs(Math.sin(b.walk))*.05;
+    if(!sees||dist>18){const sp=(sees?2.2:3)*D().speed*dt;bp.x+=Math.sin(ang)*sp;bp.z+=Math.cos(ang)*sp;collide(bp,.4);b.walk=(b.walk||0)+dt*9;if(!b.model)b.g.position.y=Math.abs(Math.sin(b.walk))*.05;b.moving=true;
       if(Math.sin(b.walk)*Math.sin(b.walk-dt*9)<0){const v=volOf(bp.x,bp.z,22);if(v>0)SFX.step(v*.7,panOf(bp.x,bp.z))}}
     // defuse
     if(R.bomb&&!R.bomb.defused&&Math.hypot(R.bomb.x-bp.x,R.bomb.z-bp.z)<1.6&&!sees){b.defuse=(b.defuse||0)+dt;if(b.defuse>6){R.bomb.defused=true;endRound(false,'Bom berhasil dijinakkan')}}else b.defuse=0;
     // shoot
+    if(b.acts){const mv=b.moving;b.moving=false;playAnim(b,mv?(sees?'Walk_Shoot':'Run_Gun'):(sees?'Idle_Shoot':'Idle'));if(b.hitT>0){b.hitT-=dt;if(b.hitT<=0)b.acts.HitReact.fadeOut(.2)}}
     b.cd-=dt;if(sees&&b.seen>b.react&&b.cd<=0){b.cd=(.18+Math.random()*.25)*D().rate;
       const hitChance=b.acc*Math.max(.15,1-dist/45)*(P.pos.y>1.65?.6:1);
       spark(new THREE.Vector3(bp.x+Math.sin(ang)*.4,1.3,bp.z+Math.cos(ang)*.4),0xffdd66);SFX.shot('rifle',.2+volOf(bp.x,bp.z)*.6,panOf(bp.x,bp.z),true);

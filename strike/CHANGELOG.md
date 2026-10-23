@@ -3,6 +3,14 @@
 Semua perubahan penting pada game Strike Zone dicatat di sini.
 Game: https://zenaki.github.io/Doodle-Shooter/strike/
 
+## v1.13 — 23 Okt 2026
+### Ditambahkan
+- Bot Penjaga memakai karakter tentara 3D beranimasi (CC0, Quaternius Toon Shooter Game Kit) menggantikan bot kotak-kotak.
+- Animasi bot: diam, membidik di tempat, berjalan sambil menembak, lari membawa senjata, terkena tembakan (hit react), dan jatuh saat mati.
+### Catatan
+- Hitbox (kepala/badan/kaki) tetap sama, jadi headshot tetap di bagian kepala.
+- Bila model gagal dimuat, bot kotak-kotak lama dipakai sebagai cadangan.
+
 ## v1.12 — 23 Okt 2026
 ### Ditambahkan
 - Tekstur asli (CC0, Poly Haven): pasir untuk lantai, batu pasir untuk dinding, plester untuk dinding tengah, papan kayu untuk peti, beton untuk area zona bom A.
