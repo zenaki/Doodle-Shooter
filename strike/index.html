@@ -36,6 +36,7 @@ canvas{display:block}
 .tbtn{position:absolute;width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;color:#fff}
 #tFire{right:24px;bottom:110px;width:88px;height:88px;background:rgba(220,60,40,.35)}
 #tJump{right:130px;bottom:40px}#tUse{right:24px;bottom:220px}#tRel{right:130px;bottom:140px}#tSwap{right:236px;bottom:40px}#tZoom{right:236px;bottom:140px}#tGyro{left:16px;top:126px;width:56px;height:56px;font-size:11px}
+#start,#buyClose{position:sticky;bottom:6px;z-index:2;background:#3a3820;box-shadow:0 0 0 6px rgba(10,12,8,.9)}
 #gyroSet{margin:10px 0;padding:10px 14px;border:1px solid #6a6040;border-radius:6px;font-size:14px;max-width:420px}
 #gyroSet label{display:inline-block;margin:4px 8px}#gyroSet input[type=range]{width:160px;vertical-align:middle}
 #tBuy{left:16px;top:60px;width:56px;height:56px;font-size:11px}
@@ -328,7 +329,7 @@ if(isTouch){
   jr.addEventListener('touchstart',e=>{e.preventDefault();const t=e.changedTouches[0];joy.id=t.identifier;const r=jr.getBoundingClientRect();joy.cx=r.left+60;joy.cy=r.top+60;moveJoy(t)},{passive:false});
   function moveJoy(t){let dx=t.clientX-joy.cx,dy=t.clientY-joy.cy,d=Math.hypot(dx,dy);if(d>50){dx*=50/d;dy*=50/d}joy.x=dx/50;joy.y=dy/50;$('knob').style.transform=`translate(${dx}px,${dy}px)`}
   addEventListener('touchstart',e=>{for(const t of e.changedTouches)if(t.identifier!==joy.id&&look.id===null&&t.clientX>innerWidth*.35){look.id=t.identifier;look.lx=t.clientX;look.ly=t.clientY}},{passive:false});
-  addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches){if(t.identifier===joy.id)moveJoy(t);
+  addEventListener('touchmove',e=>{if(!e.target.closest('.panel'))e.preventDefault();for(const t of e.changedTouches){if(t.identifier===joy.id)moveJoy(t);
     if(t.identifier===look.id){const k=zoomed?.3:1;P.yaw-=(t.clientX-look.lx)*.006*k;P.pitch=Math.max(-1.5,Math.min(1.5,P.pitch-(t.clientY-look.ly)*.006*k));A.sway.x=Math.max(-.03,Math.min(.03,A.sway.x-(t.clientX-look.lx)*.0004));look.lx=t.clientX;look.ly=t.clientY}}},{passive:false});
   addEventListener('touchend',e=>{for(const t of e.changedTouches){if(t.identifier===joy.id){joy.id=null;joy.x=joy.y=0;$('knob').style.transform=''}if(t.identifier===look.id)look.id=null}});
 }
@@ -460,7 +461,8 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
 requestAnimationFrame(loop);
 camera.position.set(0,12,40);camera.lookAt(0,0,0);
 
-$('start').onclick=()=>{$('menu').classList.add('hide');$('hud').classList.remove('hide');if(isTouch){$('touch').style.display='block';document.documentElement.requestFullscreen?.().catch(()=>{})}
+$('start').addEventListener('touchend',e=>{e.preventDefault();$('start').onclick()},{passive:false});
+$('start').onclick=()=>{if(R.phase==='play')return;$('menu').classList.add('hide');$('hud').classList.remove('hide');if(isTouch){$('touch').style.display='block';document.documentElement.requestFullscreen?.().catch(()=>{})}
   P.alive=false;initAudio();if(GY.on&&!GY.granted)enableGyro(true);startRound();lock()};
 </script>
 </body>
