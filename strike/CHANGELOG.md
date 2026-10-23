@@ -3,6 +3,21 @@
 Semua perubahan penting pada game Strike Zone dicatat di sini.
 Game: https://zenaki.github.io/Doodle-Shooter/strike/
 
+## v1.14 — 24 Okt 2026
+### Diubah
+- Semua senjata lama diganti 16 senjata toon (CC0, Quaternius Toon Shooter Game Kit) agar gayanya seragam dengan karakter bot.
+### Ditambahkan
+- **Pistol (slot 2):** Pistol (bawaan), Revolver Mini, Revolver.
+- **Senjata utama (slot 1):** SMG, Shotgun (9 peluru sebar, pompa), Rifle AK, Sniper Ringan (semi-otomatis), Sniper Berat (bolt-action), Short Cannon (sebaran lebar, 2 peluru), Grenade Launcher (meledak saat kena), Rocket Launcher (roket lurus, ledakan besar).
+- **Jarak dekat (slot 3):** Pisau (bawaan), Pisau Komando, Sekop. Tusukan dari belakang langsung membunuh; kill jarak dekat memberi $1500.
+- **Granat:** Granat Ledak (maks 2) dan Granat Api (maks 1, membakar area ±7 detik). Tombol GRANAT di HP, G di PC.
+- Granat memantul di lantai/dinding; ledakan dengan bola api, asap, cahaya, guncangan layar, dan damage berdasarkan jarak (terhalang dinding = aman).
+- Bot Penjaga bisa melempar granat ledak/api; peluangnya naik sesuai tingkat kesulitan. Ada peringatan "⚠ GRANAT!" bila granat musuh mendarat dekat.
+- Menu Beli dikelompokkan: Pistol, Senjata utama, Jarak dekat, Perlengkapan.
+- Tombol 3 / Q / scroll untuk berganti antar tiga slot; GANTI di HP memutar slot.
+### Catatan
+- Ledakan milik sendiri juga melukai pemain (60%).
+
 ## v1.13 — 23 Okt 2026
 ### Ditambahkan
 - Bot Penjaga memakai karakter tentara 3D beranimasi (CC0, Quaternius Toon Shooter Game Kit) menggantikan bot kotak-kotak.

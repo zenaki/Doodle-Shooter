@@ -2,10 +2,10 @@
 
 Semua aset pihak ketiga di folder ini berlisensi **CC0 1.0 (Public Domain)**. Atribusi tidak diwajibkan, dicantumkan sebagai apresiasi.
 
-## Model senjata (`models/`)
-- **Ultimate Gun Pack** oleh **Quaternius** — https://quaternius.com / https://opengameart.org/content/low-poly-guns-pack
-  - `pistol.glb` ← Pistol_1, `smg.glb` ← SubmachineGun_2, `rifle.glb` ← AssaultRifle_2, `sniper.glb` ← SniperRifle_1
-  - Dikonversi dari OBJ ke GLB dan dikompres.
+## Model senjata & granat (`models/`)
+- **Toon Shooter Game Kit** (Des 2022) oleh **Quaternius** — https://quaternius.com/packs/toonshootergamekit.html (CC0)
+  - pistol ← Pistol, revsmall ← Revolver_Small, revolver ← Revolver, smg ← SMG, shotgun ← Shotgun, rifle ← AK, sniper ← Sniper, sniper2 ← Sniper_2, cannon ← ShortCannon, launcher ← GrenadeLauncher, rocket ← RocketLauncher, knife ← Knife_1, knife2 ← Knife_2, shovel ← Shovel, nade_he ← Grenade, nade_fire ← FireGrenade
+  - Dikonversi dari glTF ke GLB dan dikompres.
 
 ## Karakter (`models/soldier.glb`)
 - **Toon Shooter Game Kit** (Des 2022) oleh **Quaternius** — https://quaternius.com/packs/toonshootergamekit.html (CC0)
