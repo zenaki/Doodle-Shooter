@@ -3,6 +3,12 @@
 Semua perubahan penting pada game Strike Zone dicatat di sini.
 Game: https://zenaki.github.io/Doodle-Shooter/strike/
 
+## v1.19 — 24 Okt 2026
+### Ditambahkan
+- **Replay kini merekam tembakan dan ledakan**: setiap tembakan digambar sebagai garis tebal dari penembak ke titik kena (hijau = tembakanmu, merah = musuh) dengan kilat laras dan titik dampak, plus peluru melesat. Ledakan granat/roket/tong, area api, dan granat/roket yang sedang terbang juga diputar ulang, lengkap dengan suara ledakan.
+### Diubah
+- **Indikator arah tembakan lebih jelas** saat bermain: busur merah lebih tebal dan besar, ada panah penunjuk arah, rona merah di tepi layar sisi datangnya serangan, dan tampil lebih lama (±1.6 detik).
+
 ## v1.18 — 24 Okt 2026
 ### Ditambahkan
 - **Layar setelah tewas** dengan tombol **▶ MAIN LAGI** (langsung ronde berikutnya) dan **🎬 TONTON REPLAY**. Ronde tidak lagi lanjut otomatis bila kamu tewas.
