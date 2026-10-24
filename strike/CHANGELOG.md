@@ -3,6 +3,12 @@
 Semua perubahan penting pada game Strike Zone dicatat di sini.
 Game: https://zenaki.github.io/Doodle-Shooter/strike/
 
+## v1.25 — 24 Okt 2026
+### Diubah
+- **Semua map 4× lebih luas** (160×160 m, sebelumnya 80×80 m). Jarak antar-bangunan, dinding, dan zona dilipatgandakan; ukuran peti, kontainer, mobil, dan karakter tetap.
+- Setiap map ditambah ±30 objek perlindungan sesuai temanya (peti, karung pasir, batu, mobil rusak, kontainer, mesin, pohon, pagar tanaman) agar area baru tidak kosong. Penempatannya sama di semua HP saat multiplayer.
+- Zona bom sedikit diperbesar, jarak pandang (kabut) diperpanjang, peta (M), pratinjau map, pencarian jalan bot, dan kamera replay menyesuaikan ukuran baru.
+
 ## v1.24 — 24 Okt 2026
 ### Diubah
 - Menu awal diseimbangkan: kolom kiri berisi **Gyro Aim + Map** (dengan pratinjau denah), kolom kanan berisi **Karakter, Kesulitan, Jumlah musuh, Tembok hancur** dan tombol Reset. Tinggi kedua kolom kini hampir sama.
