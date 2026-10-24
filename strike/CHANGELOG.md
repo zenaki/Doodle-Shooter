@@ -3,6 +3,10 @@
 Semua perubahan penting pada game Strike Zone dicatat di sini.
 Game: https://zenaki.github.io/Doodle-Shooter/strike/
 
+## v1.22 — 24 Okt 2026
+### Diperbaiki
+- Pesan "Gyro: sensor tidak mengirim data" muncul di mode solo (regresi v1.21). Izin sensor kini hanya diminta sekali walau beberapa sentuhan terjadi bersamaan; sebelumnya permintaan ganda membuat iPhone menolak izin.
+
 ## v1.21 — 24 Okt 2026
 ### Ditambahkan
 - **Pengaturan "🧱 Tembok/objek hancur"** di menu awal: Mati, 5×, 10×, 20×, atau 40× tembakan. Bila aktif, dinding bagian dalam peta, peti, kontainer, karung pasir, mobil, dan properti lain retak (makin gelap) lalu hancur dengan debu setelah jumlah tembakan itu. Pagar luar arena tidak bisa dihancurkan.

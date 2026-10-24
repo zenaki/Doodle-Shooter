@@ -121,7 +121,7 @@ body.replaying #touch .tbtn{display:none}body.replaying #hud .bar,body.replaying
 <script src="lib/peerjs.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-const VERSION='v1.21',BUILD='24 Okt 2026 10:00';
+const VERSION='v1.22',BUILD='24 Okt 2026 10:15';
 const NET={on:false,host:false,mode:'solo',id:'',team:'T',pl:{},links:{},link:null,code:'',tx:0,rx:false,_snd:null,local:/[?&]net=local/.test(location.search)};
 $('vbadge').textContent=VERSION+' · '+BUILD;$('ver').textContent='Strike Zone '+VERSION;
 // auto check for newer version (bypasses GitHub Pages cache)
@@ -580,11 +580,14 @@ function gyroUI(){$('gOn').checked=GY.on;$('gSens').value=GY.sens;$('gSensV').te
 async function reqPerm(Ev){if(typeof Ev!=='undefined'&&typeof Ev.requestPermission==='function'){try{return (await Ev.requestPermission())==='granted'}catch(e){GY.err=e.message;return false}}return true}
 async function enableGyro(on){
   if(on&&!GY.granted){
-    const m=await reqPerm(window.DeviceMotionEvent),o=await reqPerm(window.DeviceOrientationEvent);
-    GY.denied=!m&&!o; // keep listening anyway: some browsers report denied but still deliver events
-    GY.granted=true;addEventListener('devicemotion',onMotion);addEventListener('deviceorientation',onOrient)}
+    // single in-flight request: several gestures (capture unlock + button) must not prompt twice (iOS then denies)
+    if(!GY.pending)GY.pending=(async()=>{const o=await reqPerm(window.DeviceOrientationEvent),m=await reqPerm(window.DeviceMotionEvent);
+      GY.denied=!m&&!o; // keep listening anyway: some browsers report denied but still deliver events
+      if(!GY.granted){GY.granted=true;addEventListener('devicemotion',onMotion);addEventListener('deviceorientation',onOrient)}})();
+    const first=!GY.waiting;GY.waiting=true;await GY.pending;GY.waiting=false;if(!first)return}
+  else if(on&&GY.on)return;
   GY.on=on;GY.last=0;GY.prevO=null;GY.enabledAt=performance.now();saveGyro();gyroUI();
-  if(on)setTimeout(()=>{if(GY.on&&!GY.seen){$('gStat').textContent=(GY.denied?'Izin sensor ditolak. ':'')+'Sensor tidak mengirim data. iPhone: pakai Safari & aktifkan Settings › Safari › Motion & Orientation Access. Android: pastikan halaman dibuka via https.';flashMsg('Gyro: sensor tidak mengirim data',3)}},2500)}
+  clearTimeout(GY.warnT);if(on)GY.warnT=setTimeout(()=>{if(GY.on&&!GY.seen){$('gStat').textContent=(GY.denied?'Izin sensor ditolak. ':'')+'Sensor tidak mengirim data. iPhone: pakai Safari & aktifkan Settings › Safari › Motion & Orientation Access. Android: pastikan halaman dibuka via https.';flashMsg('Gyro: sensor tidak mengirim data',3)}},2500)}
 function screenAngle(){if(typeof window.orientation==='number')return window.orientation;return (screen.orientation&&screen.orientation.angle)||0}
 function gyroActive(){return GY.on&&R.phase==='play'&&P.alive&&$('buy').classList.contains('hide')}
 // Full device pose -> camera forward vector (same math as three.js DeviceOrientationControls), works in any screen orientation
@@ -1035,7 +1038,7 @@ function onReset(e){e&&e.preventDefault();e&&e.stopPropagation();if(R.phase==='m
 $('tReset').addEventListener('touchend',onReset,{passive:false});$('tReset').addEventListener('touchstart',e=>e.stopPropagation());$('tReset').onclick=onReset;
 $('start').addEventListener('touchend',e=>{e.preventDefault();$('start').onclick()},{passive:false});
 function gestureUnlock(){initAudio();if(AC&&AC.state!=='running')AC.resume();if(GY.on&&!GY.granted)enableGyro(true)}
-for(const ev of ['touchend','click','keydown'])addEventListener(ev,()=>{if(!AC||AC.state!=='running'||(GY.on&&!GY.granted))gestureUnlock()},true);
+for(const ev of ['touchend','click','keydown'])addEventListener(ev,()=>{if(!AC||AC.state!=='running'||(GY.on&&!GY.granted&&!GY.pending))gestureUnlock()},true);
 function beginUI(){$('menu').classList.add('hide');$('hud').classList.remove('hide');if(isTouch){$('touch').style.display='block';document.documentElement.requestFullscreen?.().catch(()=>{})}
   $('tReset').style.display=(!NET.on||NET.host)?'block':'none';P.alive=false;initAudio();if(GY.on&&!GY.granted)enableGyro(true)}
 $('start').onclick=()=>{if(R.phase==='play')return;
