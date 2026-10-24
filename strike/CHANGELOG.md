@@ -3,6 +3,10 @@
 Semua perubahan penting pada game Strike Zone dicatat di sini.
 Game: https://zenaki.github.io/Doodle-Shooter/strike/
 
+## v1.24 — 24 Okt 2026
+### Diubah
+- Menu awal diseimbangkan: kolom kiri berisi **Gyro Aim + Map** (dengan pratinjau denah), kolom kanan berisi **Karakter, Kesulitan, Jumlah musuh, Tembok hancur** dan tombol Reset. Tinggi kedua kolom kini hampir sama.
+
 ## v1.23 — 24 Okt 2026
 ### Ditambahkan
 - **Pilihan map** di menu awal (dengan pratinjau denah, dan latar menu langsung berganti ke map yang dipilih):
