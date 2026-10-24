@@ -3,6 +3,15 @@
 Semua perubahan penting pada game Strike Zone dicatat di sini.
 Game: https://zenaki.github.io/Doodle-Shooter/strike/
 
+## v1.21 — 24 Okt 2026
+### Ditambahkan
+- **Pengaturan "🧱 Tembok/objek hancur"** di menu awal: Mati, 5×, 10×, 20×, atau 40× tembakan. Bila aktif, dinding bagian dalam peta, peti, kontainer, karung pasir, mobil, dan properti lain retak (makin gelap) lalu hancur dengan debu setelah jumlah tembakan itu. Pagar luar arena tidak bisa dihancurkan.
+  - Peluru shotgun/cannon dihitung ±1/3 tembakan per butir; ledakan granat/roket/tong dihitung 3 tembakan untuk objek di dekatnya.
+  - Bot langsung memakai jalan baru yang terbuka. Semua objek pulih setiap ronde.
+  - Di multiplayer, pengaturan mengikuti host dan objek hancur tersinkron ke semua pemain.
+### Diperbaiki
+- **Suara dan gyro aim hilang bagi pemain yang bergabung (Co-op/PvP).** Game pemain tamu dimulai oleh sinyal dari host, bukan oleh sentuhan, sehingga browser (terutama iPhone) tidak menyalakan suara dan tidak memberi izin sensor. Sekarang suara dan izin gyro dinyalakan saat menekan Gabung/Buat Room dan pada sentuhan pertama mana pun di layar.
+
 ## v1.20 — 24 Okt 2026
 ### Ditambahkan
 - **Multiplayer online (peer-to-peer):** pilih mode **🤝 Co-op** atau **⚔️ PvP** di menu awal. Satu pemain menekan **Buat Room** dan membagikan kode 5 huruf, pemain lain memasukkan kode lalu **Gabung**. Tidak perlu server: HP saling terhubung langsung (WebRTC via PeerJS), dengan relay otomatis bila jaringan memblokir koneksi langsung.
