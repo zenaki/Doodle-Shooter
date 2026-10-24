@@ -43,6 +43,14 @@ body.replaying #touch .tbtn{display:none}body.replaying #hud .bar,body.replaying
 .btn{pointer-events:auto;font-family:inherit;font-size:16px;padding:10px 18px;margin:5px;border:2px solid #f0c050;background:#2b2a1c;color:#f0c050;border-radius:4px;cursor:pointer;min-width:200px}
 .btn:disabled{opacity:.35}
 .hide{display:none!important}
+#mpSet{margin:6px auto;padding:6px 12px;background:rgba(255,255,255,.06);border-radius:8px;font-size:14px;max-width:640px}
+#mpSet input{font-size:14px;padding:3px 6px;background:#222;color:#fff;border:1px solid #666;border-radius:4px;text-transform:none}
+#mpCode{text-transform:uppercase!important;letter-spacing:2px}
+.btn.mpb{min-width:0;font-size:13px;padding:4px 10px;margin:3px}
+#mpStat{margin-top:4px;font-size:13px;color:#ddd}#mpStat .code{font-size:22px;letter-spacing:4px;color:#f0c050;font-weight:bold}
+#mpList span{display:inline-block;margin:2px 4px;padding:2px 8px;border-radius:10px;font-size:12px}
+#mpList .tT{background:rgba(80,160,255,.35)}#mpList .tCT{background:rgba(255,90,70,.35)}
+#start.wait{opacity:.5}
 #touch{position:fixed;inset:0;display:none}
 .tbtn{position:absolute;width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;color:#fff}
 #tFire{right:24px;bottom:110px;width:88px;height:88px;background:rgba(220,60,40,.35)}
@@ -82,6 +90,12 @@ body.replaying #touch .tbtn{display:none}body.replaying #hud .bar,body.replaying
   <p class="intro">Kamu tim <b>Penyerang</b>. Pasang bom di zona <b style="color:#f55">A</b> atau habisi semua <b>Penjaga</b>. Ronde pertama yang mencapai 8 kemenangan juara.</p>
   <p class="pc-only">PC: WASD gerak · Mouse bidik · Klik tembak · Spasi lompat · R reload · E (tahan) pasang bom · B beli · 1/2/3/Q/scroll ganti senjata · M peta · G lempar granat · F pasang ranjau/jebakan · Klik kanan zoom (sniper)</p>
   <p class="mob-only intro">HP: joystick kiri gerak · geser layar kanan bidik · tombol FIRE/JUMP/BOM/GRANAT</p>
+  <div id="mpSet"><b>🌐 Mode:</b> <span id="modeBtns"></span>
+    <div id="mpBox" class="hide"><label>Nama <input id="mpName" maxlength="12" size="10"></label>
+      <button class="btn mpb" id="mpCreate">➕ Buat Room</button>
+      <span style="white-space:nowrap"><input id="mpCode" placeholder="KODE" maxlength="5" size="6" autocapitalize="characters"> <button class="btn mpb" id="mpJoin">🔗 Gabung</button></span>
+      <button class="btn mpb hide" id="mpLeave">✕ Keluar room</button>
+      <div id="mpStat"></div><div id="mpList"></div></div></div>
   <div class="sets"><div id="gyroSet"><b>🎯 Gyro Aim</b> (bidik dengan memiringkan/memutar HP)<br>
     <label><input type="checkbox" id="gOn"> Aktif</label>
     <label>Sensitivitas <input type="range" id="gSens" min="0.3" max="3" step="0.1" value="1.2"> <span id="gSensV">1.2</span></label><br>
@@ -104,9 +118,11 @@ body.replaying #touch .tbtn{display:none}body.replaying #hud .bar,body.replaying
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="lib/GLTFLoader.js"></script>
 <script src="lib/SkeletonUtils.js"></script>
+<script src="lib/peerjs.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-const VERSION='v1.19',BUILD='24 Okt 2026 03:00';
+const VERSION='v1.20',BUILD='24 Okt 2026 09:00';
+const NET={on:false,host:false,mode:'solo',id:'',team:'T',pl:{},links:{},link:null,code:'',tx:0,rx:false,_snd:null,local:/[?&]net=local/.test(location.search)};
 $('vbadge').textContent=VERSION+' · '+BUILD;$('ver').textContent='Strike Zone '+VERSION;
 // auto check for newer version (bypasses GitHub Pages cache)
 function checkUpdate(){fetch(location.pathname+'?nocache='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{const m=t.match(/const VERSION='([^']+)'/);
@@ -198,7 +214,7 @@ propModel('pallet',18,-36,1.7,.2,1.5,1,0,true);
 const BARRELS=[];
 for(const [x,z] of [[-11,-28],[11,-12],[-20,8],[18,18],[-8,26],[34,-12]]){const e={x,z,hp:30,alive:true};e.col=collider(x,z,1,1,1.35,['barrel',e]);
   e.g=propModel('explodingbarrel',x,z,1,1.35,1,0,0,true);e.sp=propModel('explodingbarrel_spilled',x+.6,z,2.5,.8,1.4,0,0,true);e.sp.visible=false;BARRELS.push(e)}
-function hitBarrel(e,d,owner){if(!e.alive)return;e.hp-=d;if(e.hp<=0){e.alive=false;removeCollider(e.col);e.g.visible=false;e.sp.visible=true;
+function hitBarrel(e,d,owner){if(!e.alive)return;if(NET.on&&!NET.rx&&owner==='player')netSend({t:'bar',i:BARRELS.indexOf(e),d});e.hp-=d;if(e.hp<=0){e.alive=false;removeCollider(e.col);e.g.visible=false;e.sp.visible=true;
   setTimeout(()=>explode(new THREE.Vector3(e.x,.7,e.z),owner,5.5,140,'Tong'),60)}}
 function resetBarrels(){for(const e of BARRELS){e.hp=30;e.alive=true;restoreCollider(e.col);e.g.visible=true;e.sp.visible=false}}
 // ---- health pickups
@@ -206,7 +222,7 @@ const PICKUPS=[];
 for(const [x,z] of [[0,-3],[-37,-22],[37,8]]){const g=propModel('health',x,z,.86,.74,.4,0,.3,true);PICKUPS.push({g,x,z,active:true,t:0})}
 function updatePickups(dt,now){for(const p of PICKUPS){if(!p.active){p.t-=dt;if(p.t<=0){p.active=true;p.g.visible=true}continue}
   p.g.rotation.y+=dt*1.5;p.g.position.y=.3+Math.sin(now/400+p.x)*.12;
-  if(P.alive&&P.hp<100&&Math.hypot(P.pos.x-p.x,P.pos.z-p.z)<1.3){P.hp=Math.min(100,P.hp+50);p.active=false;p.g.visible=false;p.t=30;SFX.heal();flashMsg('<span style="color:#7f7">+50 nyawa</span>',1);updateHUD()}}}
+  if(P.alive&&P.hp<100&&Math.hypot(P.pos.x-p.x,P.pos.z-p.z)<1.3){if(NET.on)netSend({t:'pk',i:PICKUPS.indexOf(p)});P.hp=Math.min(100,P.hp+50);p.active=false;p.g.visible=false;p.t=30;SFX.heal();flashMsg('<span style="color:#7f7">+50 nyawa</span>',1);updateHUD()}}}
 function resetPickups(){for(const p of PICKUPS){p.active=true;p.g.visible=true;p.t=0}}
 // ---- mines & bear traps (player gear)
 const GEAR={mine:{name:'Ranjau',price:400,max:2},trap:{name:'Jebakan',price:250,max:2}};
@@ -216,13 +232,15 @@ function placeGear(){if(R.phase!=='play'||!P.alive||P.cd>0)return;const kind=P.g
   const fwd=new THREE.Vector3(-Math.sin(P.yaw),0,-Math.cos(P.yaw));let p=new THREE.Vector3(P.pos.x,0,P.pos.z).addScaledVector(fwd,1.3);if(aabbHit(new THREE.Vector3(p.x,.2,p.z),.4))p.set(P.pos.x,0,P.pos.z);
   P.gear[kind]--;P.cd=.5;SFX.click();
   const g=kind==='mine'?propModel('landmine',p.x,p.z,.75,.2,.75,0,0,true):propModel('beartrap_open',p.x,p.z,.9,.2,1.05,0,0,true);
-  TRAPS.push({kind,g,x:p.x,z:p.z,arm:1,done:false,t:0});flashMsg(kind==='mine'?'Ranjau dipasang':'Jebakan dipasang',1);updateHUD()}
+  TRAPS.push({kind,g,x:p.x,z:p.z,arm:1,done:false,t:0,owner:'player'});if(NET.on)netSend({t:'gear',k:kind,x:p.x,z:p.z});flashMsg(kind==='mine'?'Ranjau dipasang':'Jebakan dipasang',1);updateHUD()}
 function updateTraps(dt){for(let i=TRAPS.length-1;i>=0;i--){const t=TRAPS[i];t.t+=dt;if(t.arm>0){t.arm-=dt;if(t.arm<=0&&t.kind==='mine')SFX.beep();continue}
   if(t.done){if(t.t>t.doneAt+6){scene.remove(t.g);TRAPS.splice(i,1)}continue}
-  for(const b of bots){if(!b.alive)continue;const d=Math.hypot(b.g.position.x-t.x,b.g.position.z-t.z);
-    if(t.kind==='mine'&&d<1){scene.remove(t.g);TRAPS.splice(i,1);explode(new THREE.Vector3(t.x,.25,t.z),'player',4.5,170,'Ranjau');break}
-    if(t.kind==='trap'&&d<.85){t.done=true;t.doneAt=t.t;scene.remove(t.g);t.g=propModel('beartrap_closed',t.x,t.z,.85,.5,1.05,0,0,true);
-      b.trapped=4;b.g.position.x=t.x;b.g.position.z=t.z;SFX.clang();SFX.stab();damageBot(b,35,false,'player','Jebakan');break}}}}
+  if(botAuth())for(const b of bots){if(!b.alive)continue;const d=Math.hypot(b.g.position.x-t.x,b.g.position.z-t.z);
+    if((t.kind==='mine'&&d<1)||(t.kind==='trap'&&d<.85)){if(NET.on)netSend({t:'tg',x:t.x,z:t.z});trapFire(t,i,b);break}}}}
+function trapFire(t,i,b){const o=t.owner||'player';
+  if(t.kind==='mine'){scene.remove(t.g);TRAPS.splice(i,1);explode(new THREE.Vector3(t.x,.25,t.z),o,4.5,170,'Ranjau');return}
+  t.done=true;t.doneAt=t.t;scene.remove(t.g);t.g=propModel('beartrap_closed',t.x,t.z,.85,.5,1.05,0,0,true);SFX.clang();SFX.stab();
+  if(b){b.trapped=4;b.g.position.x=t.x;b.g.position.z=t.z;damageBot(b,35,false,o,'Jebakan')}}
 function clearTraps(){for(const t of TRAPS)scene.remove(t.g);TRAPS.length=0}
 const SITE={x:-26,z:-30,r:5};
 const sitePad=new THREE.Mesh(new THREE.PlaneGeometry(SITE.r*2.4,SITE.r*2.4),mat(T.concrete,3,3));sitePad.rotation.x=-Math.PI/2;sitePad.position.set(SITE.x,.01,SITE.z);scene.add(sitePad);
@@ -438,14 +456,14 @@ function attachSoldier(b){const C=CHARS[b.charKey];if(!C||!C.scene||b.model||!TH
   b.mixer.update(Math.random());playAnim(b,'Idle')}
 function playAnim(b,name,fade=.2){if(!b.acts||b.anim===name||!b.acts[name])return;const nx=b.acts[name];nx.reset().play();
   if(b.anim&&b.acts[b.anim])b.acts[b.anim].crossFadeTo(nx,fade,false);b.anim=name}
-function makeBot(x,z,i){const g=new THREE.Group();
+function makeBot(x,z,i,ck){const g=new THREE.Group();
   const body=new THREE.Mesh(new THREE.BoxGeometry(.6,1.1,.35),new THREE.MeshLambertMaterial({color:0x2f4f7f}));body.position.y=1.05;g.add(body);
   const head=new THREE.Mesh(new THREE.BoxGeometry(.35,.35,.35),new THREE.MeshLambertMaterial({color:0xd9b38c}));head.position.y=1.8;g.add(head);
   const helm=new THREE.Mesh(new THREE.BoxGeometry(.38,.14,.38),new THREE.MeshLambertMaterial({color:0x223355}));helm.position.y=1.98;g.add(helm);
   const legs=new THREE.Mesh(new THREE.BoxGeometry(.5,.5,.3),new THREE.MeshLambertMaterial({color:0x223322}));legs.position.y=.25;g.add(legs);
   const bg=new THREE.Mesh(new THREE.BoxGeometry(.08,.08,.5),MAT.metal);bg.position.set(.25,1.2,-.3);g.add(bg);
   g.position.set(x,0,z);scene.add(g);
-  const b={g,head,body,hp:100,alive:true,target:null,cd:1+Math.random(),seen:0,name:'Penjaga '+(i+1),charKey:enemyChars()[i%2],react:D().react+Math.random()*.3,acc:D().acc+Math.random()*.15};b.hp=D().hp;
+  const b={g,head,body,hp:100,alive:true,target:null,cd:1+Math.random(),seen:0,name:'Penjaga '+(i+1),charKey:ck||enemyChars()[i%2],react:D().react+Math.random()*.3,acc:D().acc+Math.random()*.15};b.hp=D().hp;
   [body,head,legs,helm].forEach(m=>m.userData.bot=b);b.parts=[body,head,legs,helm];b.gunMesh=bg;bots.push(b);attachSoldier(b);return b}
 
 // ---- round state
@@ -454,25 +472,31 @@ const BOMB_TIME=35,ROUND_TIME=105;
 let bombMesh=null;
 function startRound(){R.round++;REC.frames=[];REC.acc=0;REC.ev=[];$('death').classList.add('hide');
   bots.forEach(b=>scene.remove(b.g));bots.length=0;
-  const n=CFG.enemies>0?CFG.enemies:Math.min(5,2+Math.floor(R.round/2));
-  for(let i=0;i<n;i++){const s=SPAWN_CT[i%SPAWN_CT.length],j=i>=SPAWN_CT.length?2.5:1;makeBot(s[0]+(Math.random()-.5)*j*2,s[1]+(Math.random()-.5)*j*2,i)}
-  P.pos.set(SPAWN_T.x+(Math.random()-.5)*4,1.6,SPAWN_T.z);P.yaw=0;P.pitch=0;P.vy=0;
+  if(netClient())(NET.botList||[]).forEach((q,i)=>makeBot(q[0],q[1],i,q[2]));
+  else{const n=NET.on&&NET.mode==='pvp'?0:CFG.enemies>0?CFG.enemies:Math.min(5,2+Math.floor(R.round/2))+(NET.on?Object.keys(NET.pl).length:0);
+  for(let i=0;i<n;i++){const s=SPAWN_CT[i%SPAWN_CT.length],j=i>=SPAWN_CT.length?2.5:1;makeBot(s[0]+(Math.random()-.5)*j*2,s[1]+(Math.random()-.5)*j*2,i)}}
+  if(myTeam()==='CT'){const s=SPAWN_CT[Math.floor(Math.random()*4)];P.pos.set(s[0]+(Math.random()-.5)*3,1.6,s[1]+(Math.random()-.5)*2);P.yaw=Math.PI}
+  else{P.pos.set(SPAWN_T.x+(Math.random()-.5)*4,1.6,SPAWN_T.z);P.yaw=0}P.pitch=0;P.vy=0;
   if(!P.alive){P.slots=newLoadout();P.nades={he:0,fire:0};P.gear={mine:0,trap:0};P.armor=0}
   resetBarrels();resetPickups();clearTraps();if(!NAV.grid)buildNav();bots.forEach(b=>{b.path=null});bots.forEach(b=>b.trapped=0);
   P.hp=100;P.alive=true;P.cur=P.slots[1]?1:2;P.reload=0;
   if(bombMesh){scene.remove(bombMesh);bombMesh=null}
   R.bomb=null;R.planting=0;A.swap=1;setZoom(false);shells.forEach(x=>scene.remove(x.m));shells.length=0;clearFx();R.time=ROUND_TIME;R.phase='play';R.buyTime=15;
-  flashMsg('Ronde '+R.round+' — tekan B untuk beli',2.5);updateHUD()}
-function endRound(win,why){if(R.phase!=='play')return;R.phase='end';(win?SFX.win:SFX.lose)();R.score[win?0:1]++;
-  P.money=Math.min(16000,P.money+(win?3250:1400+(R.bomb?800:0)));
+  if(NET.late){P.alive=false;NET.late=false;flashMsg('Kamu bergabung di tengah ronde — tunggu ronde berikutnya',3)}else flashMsg('Ronde '+R.round+(NET.on?' — '+(myTeam()==='T'?'kamu PENYERANG':'kamu PENJAGA'):'')+' — tekan B untuk beli',2.5);
+  if(NET.on&&NET.host)netRoundStart();updateHUD()}
+function endRound(win,why,net){if(R.phase!=='play')return;if(netClient()&&!net)return;R.phase='end';const mine=myTeam()==='T'?win:!win;(mine?SFX.win:SFX.lose)();
+  if(net)R.score=net.sc;else R.score[win?0:1]++;
+  if(net&&why==='Bom meledak!'){SFX.explode();A.punch+=.15;scene.background=new THREE.Color(0xffaa55);setTimeout(()=>scene.background=new THREE.Color(0x9cc4e4),400)}
+  P.money=Math.min(16000,P.money+(mine?3250:1400+(R.bomb&&myTeam()==='T'?800:0)));
   flashMsg((win?'PENYERANG MENANG':'PENJAGA MENANG')+'<br><span style="font-size:18px">'+why+'</span>',4);
   R.lastWin=win;R.lastWhy=why;recFrame(0,true);
+  if(NET.on){if(NET.host){netSend({t:'end',w:win,why,sc:R.score});R.timer=setTimeout(()=>{if(!NET.on)return;if(R.score[0]>=8||R.score[1]>=8){netSend({t:'over',sc:R.score});gameOver()}else startRound()},4000)}return}
   if(!P.alive){R.timer=setTimeout(()=>{R.phase='dead';showDeath()},1800);return}
   R.timer=setTimeout(()=>{if(R.score[0]>=8||R.score[1]>=8){gameOver()}else startRound()},4000)}
 function gameOver(){R.phase='menu';$('tReset').style.display='none';setZoom(false);document.exitPointerLock&&document.exitPointerLock();
-  $('menu').classList.remove('hide');$('menu').querySelector('h1').textContent=R.score[0]>=8?'KAMU MENANG!':'KAMU KALAH';
+  $('menu').classList.remove('hide');$('menu').querySelector('h1').textContent=(R.score[0]>=8)===(myTeam()==='T')?'KAMU MENANG!':'KAMU KALAH';
   $('menu').querySelector('p').innerHTML='Skor akhir '+R.score[0]+' - '+R.score[1]+' · Kill: '+P.kills;$('start').textContent='MAIN LAGI';
-  R.score=[0,0];R.round=0;P.money=800;P.kills=0;P.alive=false}
+  R.score=[0,0];R.round=0;P.money=800;P.kills=0;P.alive=false;netUI()}
 
 let msgT=0;function flashMsg(h,t){$('msg').innerHTML=h;msgT=t}
 function feed(t){const d=document.createElement('div');d.textContent=t;$('kill').prepend(d);setTimeout(()=>d.remove(),4000)}
@@ -574,27 +598,31 @@ function startReload(){const w=wep(),W=WEAPONS[w.type];if(W.melee||P.reload>0||A
 const tracers=[];
 function hitMark(){$('hitm').style.opacity=1;setTimeout(()=>$('hitm').style.opacity=0,90)}
 // damage a bot; returns true if killed
-function damageBot(b,d,head,by,label){if(!b.alive)return false;b.hp-=d;b.seen=3;b.target=P.pos.clone();
+function damageBot(b,d,head,by,label){if(!b.alive)return false;
+  if(netClient()){if(by==='player')netSend({t:'hb',i:bots.indexOf(b),d,h:head?1:0,l:label});return false}
+  const shooter=by&&by.startsWith('net:')?NET.pl[by.slice(4)]:null;b.hp-=d;b.seen=3;b.target=(shooter?shooter.pos:P.pos).clone();
   if(b.acts&&b.acts.HitReact&&b.hp>0){const h=b.acts.HitReact;h.reset();h.setEffectiveWeight(.8);h.play();b.hitT=.35}
   if(b.hp>0)return false;
-  b.alive=false;b.dieT=0;if(b.acts){b.anim=null;for(const k in b.acts)if(k!=='Death')b.acts[k].fadeOut(.15);b.acts.Death.reset().fadeIn(.1).play()}
-  SFX.botDie(panOf(b.g.position.x,b.g.position.z),volOf(b.g.position.x,b.g.position.z));
+  botDie(b);const melee=label==='Pisau'||label==='Sekop'||label==='Pisau Komando';
+  if(NET.on){if(shooter)feed(shooter.name+' ➜ '+b.name+' ['+label+']'+(head?' (headshot)':''));netSend({t:'kf',k:by==='player'?NET.id:shooter?shooter.id:'',kn:by==='player'?CFG.name:shooter?shooter.name:'?',v:b.name,l:label,h:head?1:0,m:melee?1500:300})}
   if(by==='player'){P.kills++;P.money=Math.min(16000,P.money+(label==='Pisau'||label==='Sekop'||label==='Pisau Komando'?1500:300));feed('Kamu ➜ '+b.name+' ['+label+']'+(head?' (headshot)':''))}
   if(bots.every(x=>!x.alive))endRound(true,'Semua penjaga tumbang');return true}
+function botDie(b){b.alive=false;b.dieT=0;if(b.acts){b.anim=null;for(const k in b.acts)if(k!=='Death')b.acts[k].fadeOut(.15);b.acts.Death&&b.acts.Death.reset().fadeIn(.1).play()}
+  SFX.botDie(panOf(b.g.position.x,b.g.position.z),volOf(b.g.position.x,b.g.position.z))}
 function botParts(){return [].concat(...bots.filter(b=>b.alive).map(b=>b.parts))}
 function shoot(){const w=wep(),W=WEAPONS[w.type];if(P.cd>0||P.reload>0||A.swap>.25)return;
   // --- melee
   if(W.melee){P.cd=W.rate;A.slash=1;A.slashDir=-A.slashDir;SFX.swing();
     const dir=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);ray.set(camera.position,dir);ray.far=W.range;
-    const hit=ray.intersectObjects(wallMeshes.concat(botParts()))[0];
-    if(hit){const b=hit.object.userData.bot;if(hit.object.userData.barrel)hitBarrel(hit.object.userData.barrel,W.dmg,'player');if(b){const head=hit.object===b.head;
+    const hit=ray.intersectObjects(wallMeshes.concat(botParts(),enemyParts()))[0];
+    if(hit){const b=hit.object.userData.bot;if(hit.object.userData.barrel)hitBarrel(hit.object.userData.barrel,W.dmg,'player');const pq=hit.object.userData.pl;if(pq&&NET.pl[pq]){const head=hit.object===NET.pl[pq].av.head;SFX.stab();hitMark();spark(hit.point,0xaa0000);netHit(pq,W.dmg*(head?1.5:1),head,W.name)}else if(b){const head=hit.object===b.head;
         // stab from behind = instant kill
         const fwd=new THREE.Vector3(Math.sin(b.g.rotation.y+Math.PI),0,Math.cos(b.g.rotation.y+Math.PI)),back=new THREE.Vector3(P.pos.x-b.g.position.x,0,P.pos.z-b.g.position.z).normalize();
         const behind=fwd.dot(back)<-.4;SFX.stab();hitMark();spark(hit.point,0xaa0000);damageBot(b,behind?999:W.dmg*(head?1.5:1),head,'player',W.name);setTimeout(()=>{A.punch+=.01},40)}
       else{SFX.clang();spark(hit.point,0xddddaa)}}
     return}
   if(w.mag<=0){SFX.dry();P.cd=.25;startReload();return}
-  w.mag--;P.cd=W.rate;A.flashT=.05;SFX.shot(w.type);
+  w.mag--;P.cd=W.rate;A.flashT=.05;SFX.shot(w.type);NET._snd=w.type;
   const RK=W.rk||[.05,.1,.016];
   A.kick+=RK[0];A.kickRot+=RK[1];A.side+=(Math.random()-.5)*.02;A.punch+=RK[2];P.yaw+=(Math.random()-.5)*RK[2]*.6;
   if(!(W.bolt||W.pump||W.proj))ejectShell();if(W.bolt)setTimeout(()=>setZoom(false),80);A.kick*=zoomed?.5:1;
@@ -608,21 +636,21 @@ function shoot(){const w=wep(),W=WEAPONS[w.type];if(P.cd>0||P.reload>0||A.swap>.
   // --- hitscan (pellets for shotgun/cannon)
   const moving=(Math.abs(joy.x)+Math.abs(joy.y)>.2)||keys.w||keys.a||keys.s||keys.d;
   const sp=(W.scope&&!zoomed?.06:W.spread*(zoomed&&!W.pellets?.45:1))*(moving?2.5:1)*(P.pos.y>1.65?3:1);
-  const targets=wallMeshes.concat(botParts());const dmgBy=new Map();let any=false,anyHead=false;
+  const targets=wallMeshes.concat(botParts(),enemyParts());const dmgBy=new Map();let any=false,anyHead=false;
   for(let i=0;i<(W.pellets||1);i++){
     const dir=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);dir.x+=(Math.random()-.5)*sp*2;dir.y+=(Math.random()-.5)*sp*2;dir.z+=(Math.random()-.5)*sp*2;dir.normalize();
     ray.set(camera.position,dir);ray.far=W.pellets?40:150;
-    const hit=ray.intersectObjects(targets)[0];if(!W.pellets||i<4)tracer(muzzleWorld(),hit?hit.point:camera.position.clone().addScaledVector(dir,60));if(!hit)continue;const b=hit.object.userData.bot;if(hit.object.userData.barrel)hitBarrel(hit.object.userData.barrel,W.dmg,'player');
-    spark(hit.point,b?0xaa0000:0x998866);if(!b&&Math.random()<(W.pellets?.06:.3))SFX.ricochet(panOf(hit.point.x,hit.point.z),volOf(hit.point.x,hit.point.z,30)*.6);
-    if(b){const head=hit.object===b.head;let d=W.dmg;if(head)d*=W.pellets?2:3.5;else if(hit.point.y<.6)d*=.75;
-      if(W.pellets)d*=Math.max(.35,1-hit.distance/30);const e=dmgBy.get(b)||{d:0,head:false};e.d+=d;e.head=e.head||head;dmgBy.set(b,e);any=true;anyHead=anyHead||head}}
+    const hit=ray.intersectObjects(targets)[0];if(!W.pellets||i<4)tracer(muzzleWorld(),hit?hit.point:camera.position.clone().addScaledVector(dir,60));if(!hit)continue;const b=hit.object.userData.bot,pq=hit.object.userData.pl;if(hit.object.userData.barrel)hitBarrel(hit.object.userData.barrel,W.dmg,'player');
+    spark(hit.point,(b||pq)?0xaa0000:0x998866);if(!b&&!pq&&Math.random()<(W.pellets?.06:.3))SFX.ricochet(panOf(hit.point.x,hit.point.z),volOf(hit.point.x,hit.point.z,30)*.6);
+    const tg=b||(pq&&NET.pl[pq]);if(tg){const head=hit.object===(b?b.head:tg.av.head);let d=W.dmg;if(head)d*=W.pellets?2:3.5;else if(hit.point.y<.6)d*=.75;
+      if(W.pellets)d*=Math.max(.35,1-hit.distance/30);const key=b||pq,e=dmgBy.get(key)||{d:0,head:false};e.d+=d;e.head=e.head||head;dmgBy.set(key,e);any=true;anyHead=anyHead||head}}
   if(any){SFX.hit(anyHead);hitMark()}
-  for(const [b,e] of dmgBy)damageBot(b,e.d,e.head,'player',W.name);
+  for(const [b,e] of dmgBy)typeof b==='string'?netHit(b,e.d,e.head,W.name):damageBot(b,e.d,e.head,'player',W.name);
   updateHUD()}
 const sparks=[];
 // ================= TRACERS =================
 const tracers2=[];const TRACER_GEO=new THREE.BoxGeometry(.025,.025,1);
-function tracer(from,to,color=0xffe9a0,speed=260){recEv({type:'shot',a:from.toArray(),b:to.toArray(),me:color!==0xffc070});const dir=new THREE.Vector3().subVectors(to,from),len=dir.length();if(len<.5)return;dir.normalize();
+function tracer(from,to,color=0xffe9a0,speed=260){if(NET.on&&!NET.rx&&(R.phase==='play'||R.phase==='end'))netSend({t:'tr',a:from.toArray().map(r2),b:to.toArray().map(r2),c:color,s:NET._snd||0});NET._snd=null;recEv({type:'shot',a:from.toArray(),b:to.toArray(),me:color!==0xffc070});const dir=new THREE.Vector3().subVectors(to,from),len=dir.length();if(len<.5)return;dir.normalize();
   const m=new THREE.Mesh(TRACER_GEO,new THREE.MeshBasicMaterial({color,transparent:true,opacity:.9,depthWrite:false,blending:THREE.AdditiveBlending}));
   const L=Math.min(2.2,len*.5);m.scale.set(1,1,L);m.position.copy(from).addScaledVector(dir,L/2);m.lookAt(m.position.clone().add(dir));scene.add(m);
   tracers2.push({m,from:from.clone(),dir,len,L,d:L/2,speed})}
@@ -648,6 +676,10 @@ function drawMap(now){if(!mapOn)return;const c=$('mapc'),x=c.getContext('2d'),S=
   if(R.bomb&&!R.bomb.defused){const bl=Math.floor(now/250)%2;x.fillStyle=bl?'#ff2020':'#ffcc00';x.font=(18*k/5.2)+'px sans-serif';x.fillText('💣',X(R.bomb.x),Z(R.bomb.z))}
   // enemies
   for(const b of bots){const p=b.g.position;if(b.alive){x.fillStyle='#ff3b30';x.strokeStyle='#000';x.lineWidth=1.5;x.beginPath();x.arc(X(p.x),Z(p.z),8,0,7);x.fill();x.stroke()}else{x.strokeStyle='#888';x.lineWidth=2;const a=X(p.x),c2=Z(p.z);x.beginPath();x.moveTo(a-4,c2-4);x.lineTo(a+4,c2+4);x.moveTo(a+4,c2-4);x.lineTo(a-4,c2+4);x.stroke()}}
+  // other players
+  for(const id in NET.pl){const q=NET.pl[id];if(!q.av)continue;const fr=q.team===myTeam();if(!fr)continue;
+    x.fillStyle=q.alive?'#4af':'#456';x.strokeStyle='#000';x.lineWidth=1.5;x.beginPath();x.arc(X(q.pos.x),Z(q.pos.z),7,0,7);x.fill();x.stroke();
+    x.fillStyle='#bdf';x.font='bold 11px Verdana';x.textAlign='center';x.fillText(q.name,X(q.pos.x),Z(q.pos.z)-12)}
   // me + facing (view cone)
   const px=X(P.pos.x),pz=Z(P.pos.z),f=Math.atan2(-Math.cos(P.yaw),-Math.sin(P.yaw));
   x.fillStyle='rgba(120,255,120,.18)';x.beginPath();x.moveTo(px,pz);x.arc(px,pz,60,f-.6,f+.6);x.closePath();x.fill();
@@ -659,7 +691,7 @@ function dmgDir(src){if(!src)return;{const a=relAngle(src.x,src.z),e=document.cr
   $('dirs').appendChild(el);requestAnimationFrame(()=>el.style.opacity=0);setTimeout(()=>el.remove(),1700)}
 const nadeIcons=new Map();
 function updateNadeIcons(){const live=new Set();
-  if(P.alive)for(const pr of projs){if(pr.kind!=='he'&&pr.kind!=='fire'&&!(pr.owner==='bot'))continue;
+  if(P.alive)for(const pr of projs){if(pr.kind!=='he'&&pr.kind!=='fire'&&!hostile(pr.owner))continue;
     const p=pr.m.position,R0=pr.kind==='fire'?3.4:pr.kind==='rocket'?7:pr.kind==='gl'?5:6;
     // predict where it ends: grenades roll a bit; use current pos + small lead of horizontal velocity
     const lead=pr.kind==='he'?Math.min(.6,Math.max(0,pr.fuse-pr.t)):0.15;const px=p.x+pr.v.x*lead*.5,pz=p.z+pr.v.z*lead*.5;
@@ -677,7 +709,7 @@ function makeProjMesh(kind){if(kind==='he'||kind==='fire'){if(NADE_MODEL[kind])r
   const g=new THREE.Group();const body=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.35,8),new THREE.MeshLambertMaterial({color:0x666666}));body.rotation.x=Math.PI/2;g.add(body);
   const tip=new THREE.Mesh(new THREE.ConeGeometry(.05,.14,8),new THREE.MeshLambertMaterial({color:0xcc2222}));tip.rotation.x=-Math.PI/2;tip.position.z=-.24;g.add(tip);
   const fl=new THREE.Mesh(new THREE.SphereGeometry(.07,6,6),new THREE.MeshBasicMaterial({color:0xffaa33}));fl.position.z=.2;g.add(fl);return g}
-function spawnProj(kind,pos,vel,owner){const m=makeProjMesh(kind);m.position.copy(pos);scene.add(m);
+function spawnProj(kind,pos,vel,owner){if(NET.on&&!NET.rx&&(owner==='player'||owner==='bot'))netSend({t:'pj',k:kind,p:pos.toArray(),v:vel.toArray(),o:owner==='bot'?1:0,s:NET._snd||0});NET._snd=null;const m=makeProjMesh(kind);m.position.copy(pos);scene.add(m);
   projs.push({kind,m,v:vel,owner,t:0,fuse:kind==='he'?1.7:kind==='fire'?2.2:kind==='gl'?4:3.5,r:kind==='rocket'?.12:.1,spin:new THREE.Vector3(Math.random()*12,Math.random()*12,0),bounces:0})}
 function throwNade(){if(R.phase!=='play'||!P.alive||P.cd>0||P.reload>0||A.swap>.3)return;
   const kind=P.nades.he>0?'he':P.nades.fire>0?'fire':null;if(!kind){flashMsg('Tidak punya granat — beli di menu BELI',1.4);return}
@@ -704,10 +736,10 @@ function updateProjs(dt){
         if(pen[1]==='y'){p.y=w.h+r;pr.v.y=Math.abs(pr.v.y)*.35;pr.v.x*=.6;pr.v.z*=.6}else{p.copy(prev);pr.v[pen[1]]*=-.45;pr.v.y*=.8}
         if(pr.v.length()>2)SFX.bounce(volOf(p.x,p.z,25)*.8,panOf(p.x,p.z))}}
     // bots (direct hit for impact weapons)
-    if(pr.kind==='gl'||pr.kind==='rocket'){for(const b of bots)if(b.alive&&pr.owner==='player'&&Math.hypot(b.g.position.x-p.x,b.g.position.z-p.z)<.55&&p.y<2.1){hitSomething=true;break}
-      if(pr.owner==='bot'&&Math.hypot(P.pos.x-p.x,P.pos.z-p.z)<.5&&p.y<P.pos.y+.2)hitSomething=true}
+    if(pr.kind==='gl'||pr.kind==='rocket'){for(const b of bots)if(b.alive&&pr.owner!=='bot'&&Math.hypot(b.g.position.x-p.x,b.g.position.z-p.z)<.55&&p.y<2.1){hitSomething=true;break}
+      if(hostile(pr.owner)&&Math.hypot(P.pos.x-p.x,P.pos.z-p.z)<.5&&p.y<P.pos.y+.2)hitSomething=true}
     // enemy grenade warning
-    if(pr.owner==='bot'&&(pr.kind==='he'||pr.kind==='fire')&&nadeIcons.has(pr)&&!pr.warned&&P.alive){pr.warned=1;SFX.beep()}
+    if(hostile(pr.owner)&&(pr.kind==='he'||pr.kind==='fire')&&nadeIcons.has(pr)&&!pr.warned&&P.alive){pr.warned=1;SFX.beep()}
     let boom=false;
     if(pr.kind==='gl'&&hitSomething&&pr.t>.08)boom=true;
     if(pr.kind==='rocket'&&hitSomething)boom=true;
@@ -735,11 +767,12 @@ function explode(pos,owner,R0,dmg,label){recEv({type:'boom',p:pos.toArray(),R:R0
   A.punch+=Math.max(0,.12*(1-dP/25));A.side+=(Math.random()-.5)*Math.max(0,.1*(1-dP/25));
   const eye=pos.clone().add(new THREE.Vector3(0,.4,0));
   // player
-  if(P.alive&&dP<R0&&losClear(eye,P.pos)){const d=dmg*(1-dP/R0)*(owner==='player'?.6:1);if(d>1)hurtPlayer(d,{name:owner==='player'?'Kamu sendiri ('+label+')':label,pos})}
+  const hf=owner==='player'?.6:hostile(owner)?1:0;
+  if(hf&&P.alive&&dP<R0&&losClear(eye,P.pos)){const d=dmg*(1-dP/R0)*hf;if(d>1)hurtPlayer(d,{name:owner==='player'?'Kamu sendiri ('+label+')':ownerName(owner,label),pos,by:owner,label})}
   for(const e of BARRELS)if(e.alive&&pos.distanceTo(new THREE.Vector3(e.x,.7,e.z))<R0*.8)hitBarrel(e,999,owner);
   // bots (only from player's explosives)
-  if(owner==='player')for(const b of bots){if(!b.alive)continue;const bc=new THREE.Vector3(b.g.position.x,1.1,b.g.position.z),d=pos.distanceTo(bc);
-    if(d<R0&&losClear(eye,bc)){const dd=dmg*(1-d/R0);if(dd>1){hitMark();damageBot(b,dd,false,'player',label)}}}}
+  if(owner!=='bot'&&owner!=='replay'&&botAuth())for(const b of bots){if(!b.alive)continue;const bc=new THREE.Vector3(b.g.position.x,1.1,b.g.position.z),d=pos.distanceTo(bc);
+    if(d<R0&&losClear(eye,bc)){const dd=dmg*(1-d/R0);if(dd>1){if(owner==='player')hitMark();damageBot(b,dd,false,owner,label)}}}}
 function makeFire(pos,owner){recEv({type:'fire',p:pos.toArray()});const g=new THREE.Group();g.position.copy(pos);scene.add(g);
   const scorch=new THREE.Mesh(new THREE.CircleGeometry(3,20),new THREE.MeshBasicMaterial({color:0x140800,transparent:true,opacity:.5,depthWrite:false}));scorch.rotation.x=-Math.PI/2;scorch.position.y=.02;g.add(scorch);
   const flames=[];for(let i=0;i<16;i++){const a=Math.random()*Math.PI*2,r=Math.sqrt(Math.random())*2.7;
@@ -752,8 +785,8 @@ function updateFires(dt){for(let i=fires.length-1;i>=0;i--){const f=fires[i];f.t
     f.li.intensity=(2+Math.random())*fade;
     f.snd-=dt;if(f.snd<=0){f.snd=.12+Math.random()*.1;SFX.crackle(volOf(f.pos.x,f.pos.z,25)*.6*fade,panOf(f.pos.x,f.pos.z))}
     f.tick-=dt;if(f.tick<=0&&fade>.3){f.tick=.3;
-      if(P.alive&&Math.hypot(P.pos.x-f.pos.x,P.pos.z-f.pos.z)<3&&Math.abs(P.pos.y-1.6-f.pos.y)<1.2)hurtPlayer(6,{name:f.owner==='player'?'Kamu sendiri (api)':'Granat Api',pos:f.pos});
-      if(f.owner==='player')for(const b of bots)if(b.alive&&Math.hypot(b.g.position.x-f.pos.x,b.g.position.z-f.pos.z)<3)damageBot(b,9,false,'player','Granat Api')}
+      if((f.owner==='player'||hostile(f.owner))&&P.alive&&Math.hypot(P.pos.x-f.pos.x,P.pos.z-f.pos.z)<3&&Math.abs(P.pos.y-1.6-f.pos.y)<1.2)hurtPlayer(6,{name:f.owner==='player'?'Kamu sendiri (api)':ownerName(f.owner,'Granat Api'),pos:f.pos,by:f.owner,label:'Granat Api'});
+      if(f.owner!=='bot'&&f.owner!=='replay'&&botAuth())for(const b of bots)if(b.alive&&Math.hypot(b.g.position.x-f.pos.x,b.g.position.z-f.pos.z)<3)damageBot(b,9,false,f.owner,'Granat Api')}
     if(f.t>=f.life){scene.remove(f.g);fires.splice(i,1)}}}
 function spark(p,c){const m=new THREE.Mesh(new THREE.SphereGeometry(.06,4,4),new THREE.MeshBasicMaterial({color:c}));m.position.copy(p);scene.add(m);sparks.push({m,t:.3})}
 
@@ -788,11 +821,13 @@ function navAngle(b,goal,dt){const bp=b.g.position;b.pathT=(b.pathT||0)-dt;
   const w=b.pi<b.path.length?b.path[b.pi]:goal;return Math.atan2(w.x-bp.x,w.z-bp.z)}
 
 // ---- bots logic
-function updateBots(dt){const eye=P.pos.clone();
+function updateBots(dt){const TG=botTargets();
   for(const b of bots){if(b.mixer)b.mixer.update(dt);if(!b.alive){if(b.model)continue;if(b.dieT!==undefined&&b.dieT<1){b.dieT=Math.min(1,b.dieT+dt*2.5);const e=1-Math.pow(1-b.dieT,3);b.g.rotation.x=-e*Math.PI/2;b.g.position.y=e*.2}continue}const bp=b.g.position;const head=new THREE.Vector3(bp.x,1.8,bp.z);
-    const toP=new THREE.Vector3(eye.x-bp.x,0,eye.z-bp.z),dist=toP.length();
-    let sees=P.alive&&dist<D().sight&&losClear(head,eye);
-    if(sees){b.seen+=dt;b.target=P.pos.clone()}else b.seen=Math.max(0,b.seen-dt*.5);
+    let tg=null,dist=1e9,sees=false;
+    for(const q of TG){const dd=Math.hypot(q.pos.x-bp.x,q.pos.z-bp.z);if(dd<D().sight&&(!sees||dd<dist)&&losClear(head,q.pos)){tg=q;dist=dd;sees=true}}
+    if(!tg)for(const q of TG){const dd=Math.hypot(q.pos.x-bp.x,q.pos.z-bp.z);if(dd<dist){dist=dd;tg=q}}
+    const eye=tg?tg.pos:P.pos;
+    if(sees){b.seen+=dt;b.target=eye.clone()}else b.seen=Math.max(0,b.seen-dt*.5);
     if(R.bomb&&!sees)b.target=new THREE.Vector3(R.bomb.x,0,R.bomb.z);
     if(!b.target||(Math.hypot(b.target.x-bp.x,b.target.z-bp.z)<1.5&&!sees)){const p=PATROL[Math.floor(Math.random()*PATROL.length)];b.target=new THREE.Vector3(p[0],0,p[1])}
     const tgt=sees?eye:b.target;const ang=Math.atan2(tgt.x-bp.x,tgt.z-bp.z);let mvAng=ang;
@@ -807,17 +842,17 @@ function updateBots(dt){const eye=P.pos.clone();
     // shoot
     if(b.acts){const mv=b.moving;b.moving=false;playAnim(b,mv?(sees?'Walk_Shoot':'Run_Gun'):(sees?'Idle_Shoot':'Idle'));if(b.hitT>0){b.hitT-=dt;if(b.hitT<=0)b.acts.HitReact.fadeOut(.2)}}
     if(b.nadeCd===undefined)b.nadeCd=6+Math.random()*8;b.nadeCd-=dt;
-    if(sees&&b.nadeCd<=0&&dist>7&&dist<26&&b.seen>b.react+.5){b.nadeCd=10+Math.random()*10;if(Math.random()<D().nade){botThrow(b,P.pos);b.cd=.8}}
+    if(sees&&b.nadeCd<=0&&dist>7&&dist<26&&b.seen>b.react+.5){b.nadeCd=10+Math.random()*10;if(Math.random()<D().nade){botThrow(b,eye);b.cd=.8}}
     b.cd-=dt;if(sees&&b.seen>b.react&&b.cd<=0){b.cd=(.18+Math.random()*.25)*D().rate;
-      const hitChance=b.acc*Math.max(.15,1-dist/45)*(P.pos.y>1.65?.6:1);
+      const hitChance=b.acc*Math.max(.15,1-dist/45)*(eye.y>1.65?.6:1);
       spark(new THREE.Vector3(bp.x+Math.sin(ang)*.4,1.3,bp.z+Math.cos(ang)*.4),0xffdd66);SFX.shot('rifle',.2+volOf(bp.x,bp.z)*.6,panOf(bp.x,bp.z),true);
       const from=new THREE.Vector3(bp.x+Math.sin(ang)*.5,1.35,bp.z+Math.cos(ang)*.5),hitP=Math.random()<hitChance;
-      const to=P.pos.clone().add(new THREE.Vector3(0,-.35,0));if(!hitP){to.x+=(Math.random()-.5)*2.2;to.y+=(Math.random()-.3)*1.2;to.z+=(Math.random()-.5)*2.2;to.sub(from).multiplyScalar(1.6).add(from)}
-      tracer(from,to,0xffc070,170);if(!hitP&&dist<30&&Math.random()<.5)SFX.whiz(panOf(to.x,to.z));
-      if(hitP)hurtPlayer((12+Math.random()*12)*D().dmg,b)}}}
+      const to=eye.clone().add(new THREE.Vector3(0,-.35,0));if(!hitP){to.x+=(Math.random()-.5)*2.2;to.y+=(Math.random()-.3)*1.2;to.z+=(Math.random()-.5)*2.2;to.sub(from).multiplyScalar(1.6).add(from)}
+      NET._snd='bot';tracer(from,to,0xffc070,170);if(!hitP&&tg.me&&dist<30&&Math.random()<.5)SFX.whiz(panOf(to.x,to.z));
+      if(hitP){const dd=(12+Math.random()*12)*D().dmg;if(tg.me)hurtPlayer(dd,b);else netTo(tg.id,{t:'dmg',d:dd,x:bp.x,z:bp.z,n:b.name})}}}}
 function hurtPlayer(d,b){if(!P.alive)return;dmgDir(b&&(b.g?b.g.position:b.pos));if(P.armor>0){const a=d*.5;P.armor=Math.max(0,P.armor-a);d-=a*.8}
   P.hp-=d;SFX.hurt();A.punch-=.03;A.side+=(Math.random()-.5)*.04;$('dmg').style.opacity=.8;setTimeout(()=>$('dmg').style.opacity=0,150);
-  if(P.hp<=0){P.hp=0;P.alive=false;SFX.die();setZoom(false);feed(b.name+' ➜ Kamu');if(!R.bomb)endRound(false,'Kamu tewas');else flashMsg('Kamu tewas — bom masih aktif!',3)}updateHUD()}
+  if(P.hp<=0){P.hp=0;P.alive=false;SFX.die();setZoom(false);feed(b.name+' ➜ Kamu');if(NET.on){netSend({t:'die',by:b.by&&b.by.startsWith('net:')?b.by.slice(4):'',bn:b.name,l:b.label||''});flashMsg('Kamu tewas — menonton rekan setim',3)}else if(!R.bomb)endRound(false,'Kamu tewas');else flashMsg('Kamu tewas — bom masih aktif!',3)}updateHUD()}
 
 // ================= REPLAY =================
 const REC={frames:[],acc:0,ev:[]};
@@ -919,12 +954,14 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
       const W=WEAPONS[wep().type];if((W.auto&&(mouseDown||touchFire))||firePressed)shoot();firePressed=false;
       // plant
       const inSite=Math.hypot(P.pos.x-SITE.x,P.pos.z-SITE.z)<SITE.r;
-      if(R.phase==='play'&&!R.bomb&&inSite&&(keys.e||touchUse)&&P.pos.y<1.65){R.planting+=dt;R.pk=(R.pk||0)-dt;if(R.pk<=0){R.pk=.22;SFX.plantKey()}$('prog').style.display='block';$('prog').firstChild.style.width=(R.planting/3*100)+'%';
-        if(R.planting>=3){R.bomb={x:P.pos.x,z:P.pos.z,t:BOMB_TIME};R.planting=0;$('prog').style.display='none';
-          bombMesh=new THREE.Mesh(new THREE.BoxGeometry(.4,.2,.3),new THREE.MeshLambertMaterial({color:0x333311,emissive:0x330000}));bombMesh.position.set(R.bomb.x,.1,R.bomb.z);scene.add(bombMesh);
-          P.money+=300;flashMsg('BOM TERPASANG — pertahankan!',2.5);bots.forEach(b=>{if(b.alive)b.target=new THREE.Vector3(R.bomb.x,0,R.bomb.z)})}}
+      if(R.phase==='play'&&myTeam()==='T'&&!R.bomb&&inSite&&(keys.e||touchUse)&&P.pos.y<1.65){R.planting+=dt;R.pk=(R.pk||0)-dt;if(R.pk<=0){R.pk=.22;SFX.plantKey()}$('prog').style.display='block';$('prog').firstChild.style.width=(R.planting/3*100)+'%';
+        if(R.planting>=3){R.planting=0;$('prog').style.display='none';P.money+=300;if(netClient())netSend({t:'plant',x:P.pos.x,z:P.pos.z});plantBomb(P.pos.x,P.pos.z)}}
       else{R.planting=0;$('prog').style.display='none'}
-      if(isTouch)$('tUse').style.opacity=(inSite&&!R.bomb)?1:.3;
+      // defuse (human Penjaga in PvP)
+      const nearBomb=R.bomb&&!R.bomb.defused&&Math.hypot(P.pos.x-R.bomb.x,P.pos.z-R.bomb.z)<1.8;
+      if(myTeam()==='CT'&&R.phase==='play'&&nearBomb&&(keys.e||touchUse)){R.defusing=(R.defusing||0)+dt;R.pk=(R.pk||0)-dt;if(R.pk<=0){R.pk=.3;SFX.plantKey()}$('prog').style.display='block';$('prog').firstChild.style.width=(R.defusing/5*100)+'%';
+        if(R.defusing>=5){R.defusing=0;$('prog').style.display='none';if(netClient())netSend({t:'defuse'});else{R.bomb.defused=true;endRound(false,'Bom berhasil dijinakkan')}}}else R.defusing=0;
+      if(isTouch)$('tUse').style.opacity=(myTeam()==='T'?(inSite&&!R.bomb):nearBomb)?1:.3;
     }
     camera.position.set(P.pos.x,P.pos.y+Math.sin(bob)*.03,P.pos.z);camera.rotation.set(P.pitch+A.punch,P.yaw,A.side*.5,'YXZ');
     animGun(dt,moving);
@@ -932,13 +969,14 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
     if(P.reload>0){P.reload-=dt;if(P.reload<=0){SFX.click();const w=wep(),W=WEAPONS[w.type],n=Math.min(W.mag-w.mag,w.res);w.mag+=n;w.res-=n}updateHUD()}
     updateProjs(dt);updateFires(dt);updateTracers(dt);updateNadeIcons();drawMap(now);updatePickups(dt,now);if(R.phase==='play')updateTraps(dt);
     if(R.phase==='play'||R.phase==='end')recFrame(dt);
-    if(R.phase==='play'){updateBots(dt);R.buyTime-=dt;
+    if(R.phase==='play'){netClient()?clientBots(dt):updateBots(dt);R.buyTime-=dt;
       if(R.bomb&&!R.bomb.defused){R.bomb.t-=dt;const iv=R.bomb.t<5?.25:R.bomb.t<10?.5:1;R.beep=(R.beep||0)-dt;if(R.beep<=0){R.beep=iv;SFX.beep()}bombMesh.material.emissive.setHex(Math.floor(now/(R.bomb.t<10?150:500))%2?0xff0000:0x220000);
-        if(R.bomb.t<=0){SFX.explode();A.punch+=.15;endRound(true,'Bom meledak!');scene.background=new THREE.Color(0xffaa55);setTimeout(()=>scene.background=new THREE.Color(0x9cc4e4),400)}}
-      else{R.time-=dt;if(R.time<=0)endRound(false,'Waktu habis')}
-      if(!P.alive&&R.bomb)camera.position.set(R.bomb.x+6,8,R.bomb.z+6),camera.lookAt(R.bomb.x,0,R.bomb.z);}
-    const alive=bots.filter(b=>b.alive).length;
-    $('top').innerHTML='['+D().label+'] Penyerang <b>'+R.score[0]+'</b> : <b>'+R.score[1]+'</b> Penjaga · '+(R.bomb&&!R.bomb.defused?'<span style="color:#f55">💣 '+fmt(R.bomb.t)+'</span>':fmt(R.time))+' · Musuh: '+alive+(R.buyTime>0?' · Beli: '+Math.ceil(R.buyTime):'');
+        if(R.bomb.t<=0&&!netClient()){SFX.explode();A.punch+=.15;endRound(true,'Bom meledak!');scene.background=new THREE.Color(0xffaa55);setTimeout(()=>scene.background=new THREE.Color(0x9cc4e4),400)}}
+      else{R.time-=dt;if(R.time<=0&&!netClient())endRound(false,'Waktu habis')}
+      if(!P.alive&&NET.on)spectate();else if(!P.alive&&R.bomb)camera.position.set(R.bomb.x+6,8,R.bomb.z+6),camera.lookAt(R.bomb.x,0,R.bomb.z);}
+    if(NET.on)netTick(dt,moving);
+    const alive=enemyAlive();
+    $('top').innerHTML=(NET.on?'['+(NET.mode==='pvp'?'PvP':'Co-op')+' · '+(myTeam()==='T'?'Penyerang':'Penjaga')+'] ':'')+'['+D().label+'] Penyerang <b>'+R.score[0]+'</b> : <b>'+R.score[1]+'</b> Penjaga · '+(R.bomb&&!R.bomb.defused?'<span style="color:#f55">💣 '+fmt(R.bomb.t)+'</span>':fmt(R.time))+' · Musuh: '+alive+(R.buyTime>0?' · Beli: '+Math.ceil(R.buyTime):'');
     if(msgT>0){msgT-=dt;if(msgT<=0)$('msg').innerHTML=''}
     for(let i=sparks.length-1;i>=0;i--){sparks[i].t-=dt;if(sparks[i].t<=0){scene.remove(sparks[i].m);sparks.splice(i,1)}}
   }
@@ -978,8 +1016,180 @@ function onReset(e){e&&e.preventDefault();e&&e.stopPropagation();if(R.phase==='m
   document.exitPointerLock&&document.exitPointerLock();setTimeout(()=>{if(confirm('Ulang pertandingan dari awal? (skor & uang direset)'))resetMatch();lock()},10)}
 $('tReset').addEventListener('touchend',onReset,{passive:false});$('tReset').addEventListener('touchstart',e=>e.stopPropagation());$('tReset').onclick=onReset;
 $('start').addEventListener('touchend',e=>{e.preventDefault();$('start').onclick()},{passive:false});
-$('start').onclick=()=>{if(R.phase==='play')return;$('menu').classList.add('hide');$('hud').classList.remove('hide');if(isTouch){$('touch').style.display='block';document.documentElement.requestFullscreen?.().catch(()=>{})}
-  $('tReset').style.display='block';P.alive=false;initAudio();if(GY.on&&!GY.granted)enableGyro(true);startRound();lock()};
+function beginUI(){$('menu').classList.add('hide');$('hud').classList.remove('hide');if(isTouch){$('touch').style.display='block';document.documentElement.requestFullscreen?.().catch(()=>{})}
+  $('tReset').style.display=(!NET.on||NET.host)?'block':'none';P.alive=false;initAudio();if(GY.on&&!GY.granted)enableGyro(true)}
+$('start').onclick=()=>{if(R.phase==='play')return;
+  if(NET.mode!=='solo'){if(!NET.on){mpStat('Buat room atau gabung dulu');return}if(!NET.host){mpStat('Menunggu host memulai…');return}
+    if(NET.mode==='pvp'){const tm=[NET.team].concat(Object.values(NET.pl).map(q=>q.team));if(!tm.includes('T')||!tm.includes('CT')){mpStat('PvP butuh minimal 1 pemain di tiap tim — ajak teman bergabung dulu');return}}}
+  beginUI();startRound();lock()};
+// ================= MULTIPLAYER (Co-op & PvP, WebRTC P2P via PeerJS, host-authoritative) =================
+function netClient(){return NET.on&&!NET.host}
+function botAuth(){return !netClient()}
+function myTeam(){return NET.on?NET.team:'T'}
+function r2(v){return Math.round(v*100)/100}
+function hostile(o){if(o==='bot')return myTeam()==='T';if(o&&o.startsWith&&o.startsWith('net:')){const q=NET.pl[o.slice(4)];return NET.mode==='pvp'&&!!q&&q.team!==myTeam()}return false}
+function ownerName(o,label){if(o&&o.startsWith&&o.startsWith('net:')){const q=NET.pl[o.slice(4)];return (q?q.name:'Pemain')+' ('+label+')'}return label}
+function enemyParts(){if(!NET.on||NET.mode!=='pvp')return [];const out=[];for(const id in NET.pl){const q=NET.pl[id];if(q.av&&q.alive&&q.team!==myTeam())out.push(...q.av.parts)}return out}
+function enemyAlive(){if(NET.on&&NET.mode==='pvp'){let n=0;for(const id in NET.pl){const q=NET.pl[id];if(q.alive&&q.team!==myTeam())n++}return n}return bots.filter(b=>b.alive).length}
+function botTargets(){const L=[];if(P.alive&&myTeam()==='T')L.push({pos:P.pos,me:true});
+  if(NET.on)for(const id in NET.pl){const q=NET.pl[id];if(q.alive&&q.team==='T'&&q.st)L.push({pos:q.pos,id,me:false})}return L}
+function netHit(id,d,head,label){netSend({t:'hit',to:id,d,h:head?1:0,l:label})}
+function netSend(m){if(!NET.on)return;m.f=m.f||NET.id;if(NET.host){for(const id in NET.links)NET.links[id].send(m)}else if(NET.link)NET.link.send(m)}
+function netTo(id,m){m.f=NET.id;if(NET.host&&NET.links[id])NET.links[id].send(m)}
+const RELAY=new Set(['st','tr','pj','bar','pk','gear','die']);
+function genCode(){const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789';let c='';for(let i=0;i<5;i++)c+=A[Math.floor(Math.random()*A.length)];return c}
+function mpStat(h){$('mpStat').innerHTML=h}
+
+// ---- avatars of other players
+function nameTag(text,color){const cv=document.createElement('canvas');cv.width=256;cv.height=64;const g=cv.getContext('2d');g.font='bold 34px Verdana';g.textAlign='center';g.textBaseline='middle';
+  g.lineWidth=6;g.strokeStyle='rgba(0,0,0,.8)';g.strokeText(text,128,32);g.fillStyle=color;g.fillText(text,128,32);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),transparent:true,depthTest:false}));sp.scale.set(1.8,.45,1);sp.position.y=2.5;return sp}
+function makeAvatar(q){if(q.av)removeAvatar(q);const g=new THREE.Group();scene.add(g);
+  const box=(w,h,d,y)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color:q.team==='T'?0x3a6fb0:0xb04030}));m.position.y=y;m.userData.pl=q.id;g.add(m);return m};
+  const body=box(.6,1.1,.35,1.05),head=box(.35,.35,.35,1.8),legs=box(.5,.5,.3,.25);const av={g,body,head,parts:[body,head,legs],acts:null,mixer:null,rAnim:null};
+  const fr=q.team===myTeam();av.tag=nameTag(q.name,fr?'#8fd0ff':'#ff8a7a');av.tag.visible=fr;g.add(av.tag);q.av=av;
+  charLoad(q.char||'soldier',C=>{if(q.av!==av||!THREE.SkeletonUtils)return;const m=THREE.SkeletonUtils.clone(C.scene);m.scale.setScalar(2.05/C.h);m.rotation.y=Math.PI;g.add(m);
+    av.parts.forEach(p=>p.visible=false);av.mixer=new THREE.AnimationMixer(m);av.acts={};for(const k in C.clips)av.acts[k]=av.mixer.clipAction(C.clips[k]);
+    if(av.acts.Death){av.acts.Death.setLoop(THREE.LoopOnce);av.acts.Death.clampWhenFinished=true}setAnim(av,'Idle')});
+  if(q.st)g.position.set(q.st.p[0],q.st.p[1]-1.6,q.st.p[2])}
+function removeAvatar(q){if(q.av){scene.remove(q.av.g);q.av=null}}
+function updateAvatars(dt){const k=1-Math.exp(-12*dt);
+  for(const id in NET.pl){const q=NET.pl[id],av=q.av;if(!av)continue;const s=q.st;
+    if(s){const g=av.g;g.position.x+=(s.p[0]-g.position.x)*k;g.position.y+=(s.p[1]-1.6-g.position.y)*k;g.position.z+=(s.p[2]-g.position.z)*k;g.rotation.y=lerpA(g.rotation.y,s.p[3],k);
+      q.pos.set(g.position.x,g.position.y+1.6,g.position.z);q.pitch=s.p[4]}
+    av.g.visible=!!s;const fr=q.team===myTeam();av.tag.visible=fr&&q.alive;
+    if(av.acts)setAnim(av,!q.alive?'Death':(s&&s.m?'Run_Gun':'Idle_Shoot'));
+    else if(!q.alive){av.g.rotation.x=-Math.PI/2*.9;av.g.position.y=.2}else av.g.rotation.x=0;
+    if(av.mixer)av.mixer.update(dt)}}
+// camera follows a living teammate while dead
+function spectate(){let q=null;const ids=Object.keys(NET.pl).filter(id=>{const o=NET.pl[id];return o.alive&&o.team===myTeam()&&o.st});
+  if(ids.length){NET.specI=(NET.specI||0)%ids.length;q=NET.pl[ids[NET.specI]]}
+  if(q){const y=q.st.p[3],back=new THREE.Vector3(Math.sin(y),0,Math.cos(y));camera.position.copy(q.pos).addScaledVector(back,3.2);camera.position.y+=1;camera.lookAt(q.pos.x-Math.sin(y)*6,q.pos.y,q.pos.z-Math.cos(y)*6);
+    $('msg').innerHTML='<span style="font-size:15px">👁 Menonton <b>'+q.name+'</b>'+(ids.length>1?' · tap / klik untuk ganti':'')+'</span>';msgT=.2}
+  else if(R.bomb){camera.position.set(R.bomb.x+6,8,R.bomb.z+6);camera.lookAt(R.bomb.x,0,R.bomb.z)}
+  else{camera.position.set(0,40,30);camera.lookAt(0,0,0)}}
+addEventListener('pointerdown',()=>{if(NET.on&&!P.alive&&R.phase==='play')NET.specI=(NET.specI||0)+1});
+
+// ---- per-frame
+function clientBots(dt){const k=1-Math.exp(-10*dt);
+  for(const b of bots){if(b.mixer)b.mixer.update(dt);const s=b.ns;if(!s||!b.alive)continue;const p=b.g.position;
+    if(Math.hypot(s[0]-p.x,s[1]-p.z)>6){p.x=s[0];p.z=s[1]}else{p.x+=(s[0]-p.x)*k;p.z+=(s[1]-p.z)*k}b.g.rotation.y=lerpA(b.g.rotation.y,s[2],k);
+    if(!s[3])botDie(b);else playAnim(b,s[4])}}
+function netTick(dt,moving){NET.tx-=dt;
+  if(NET.tx<=0){NET.tx=1/15;
+    netSend({t:'st',p:[r2(P.pos.x),r2(P.pos.y),r2(P.pos.z),r2(P.yaw),r2(P.pitch)],m:moving?1:0,w:wep().type});
+    if(NET.host)netSend({t:'sn',b:bots.map(b=>[r2(b.g.position.x),r2(b.g.position.z),r2(b.g.rotation.y),b.alive?1:0,b.anim||'Idle']),tm:r2(R.time),by:r2(R.buyTime),bm:R.bomb&&!R.bomb.defused?[R.bomb.x,R.bomb.z,r2(R.bomb.t)]:null})}
+  updateAvatars(dt);
+  if(NET.host&&R.phase==='play')hostCheck()}
+function hostCheck(){const H=[{team:NET.team,alive:P.alive}];for(const id in NET.pl)H.push(NET.pl[id]);
+  const tA=H.filter(h=>h.team==='T'&&h.alive).length;
+  if(NET.mode==='pvp'&&H.filter(h=>h.team==='CT'&&h.alive).length===0){endRound(true,'Semua penjaga tumbang');return}
+  if(tA===0&&!R.bomb)endRound(false,'Semua penyerang tumbang')}
+function plantBomb(x,z){if(R.bomb)return;R.bomb={x,z,t:BOMB_TIME};
+  bombMesh=new THREE.Mesh(new THREE.BoxGeometry(.4,.2,.3),new THREE.MeshLambertMaterial({color:0x333311,emissive:0x330000}));bombMesh.position.set(x,.1,z);scene.add(bombMesh);
+  flashMsg(myTeam()==='T'?'BOM TERPASANG — pertahankan!':'💣 BOM DIPASANG — jinakkan! (tahan E / BOM di dekat bom)',2.5);bots.forEach(b=>{if(b.alive)b.target=new THREE.Vector3(x,0,z)})}
+function startMsg(late){return {t:'start',r:R.round,bots:bots.map(b=>[r2(b.g.position.x),r2(b.g.position.z),b.charKey]),sc:R.score,d:CFG.diff,mode:NET.mode,late:late?1:0,tm:r2(R.time),
+  dead:[NET.team&&!P.alive?NET.id:null].concat(Object.keys(NET.pl).filter(id=>!NET.pl[id].alive)).filter(Boolean)}}
+function netRoundStart(){for(const id in NET.pl)NET.pl[id].alive=true;netSend(startMsg(false))}
+function netStartClient(m){if(R.phase==='menu')beginUI();clearTimeout(R.timer);if(RP.on)exitReplay();$('death').classList.add('hide');$('buy').classList.add('hide');
+  NET.botList=m.bots;R.round=m.r-1;R.score=m.sc;CFG.diff=m.d||CFG.diff;NET.mode=m.mode||NET.mode;
+  if(m.r===1){P.money=800;P.kills=0;P.alive=false}
+  for(const id in NET.pl)NET.pl[id].alive=!(m.dead||[]).includes(id);
+  NET.late=!!m.late;R.phase='end';startRound();if(m.late&&m.tm)R.time=m.tm}
+
+// ---- message handling
+function hostRx(from,m){m.f=from;
+  if(m.t==='hello'){const tc={T:0,CT:0};tc[NET.team]++;for(const id in NET.pl)tc[NET.pl[id].team]++;
+    const q={id:from,name:(m.n||'Pemain').slice(0,12),char:m.c||'soldier',team:NET.mode==='pvp'?(tc.T<=tc.CT?'T':'CT'):'T',alive:false,st:null,pos:new THREE.Vector3(0,1.6,30)};
+    NET.pl[from]=q;makeAvatar(q);lobbyBroadcast();feed(q.name+' bergabung');
+    if(R.phase==='play'||R.phase==='end')netTo(from,startMsg(true));return}
+  if(m.to&&m.to!==NET.id){NET.links[m.to]&&NET.links[m.to].send(m);return}
+  if(RELAY.has(m.t))for(const id in NET.links)if(id!==from)NET.links[id].send(m);
+  onNet(m)}
+function clientRx(m){onNet(m)}
+function onNet(m){const from=m.f,q=NET.pl[from],V=a=>new THREE.Vector3(a[0],a[1],a[2]);NET.rx=true;
+  try{switch(m.t){
+  case 'lobby':{NET.mode=m.mode;const seen=new Set();
+    for(const e of m.list){if(e.id===NET.id){NET.team=e.team;continue}seen.add(e.id);let o=NET.pl[e.id];
+      if(!o){o=NET.pl[e.id]={id:e.id,name:e.name,char:e.char,team:e.team,alive:false,st:null,pos:new THREE.Vector3(0,1.6,30)};makeAvatar(o)}
+      else if(o.team!==e.team||o.char!==e.char){o.team=e.team;o.char=e.char;makeAvatar(o)}}
+    for(const id in NET.pl)if(!seen.has(id)){removeAvatar(NET.pl[id]);delete NET.pl[id]}
+    for(const id in NET.pl)makeAvatar(NET.pl[id]);netUI();break}
+  case 'st':if(q){q.st=m}break;
+  case 'tr':{const a=V(m.a);tracer(a,V(m.b),m.c,m.c===0xffc070?170:260);if(m.s){const bot=m.s==='bot';SFX.shot(bot?'rifle':m.s,.15+volOf(a.x,a.z)*(bot?.6:.75),panOf(a.x,a.z),bot)}break}
+  case 'pj':{spawnProj(m.k,V(m.p),V(m.v),m.o?'bot':'net:'+from);const p=m.p;if(volOf(p[0],p[2],30)>0)SFX.throwN();if(m.s)SFX.shot(m.s,.15+volOf(p[0],p[2])*.75,panOf(p[0],p[2]));break}
+  case 'bar':{const e=BARRELS[m.i];if(e)hitBarrel(e,m.d,'net:'+from);break}
+  case 'pk':{const p=PICKUPS[m.i];if(p&&p.active){p.active=false;p.g.visible=false;p.t=30}break}
+  case 'gear':{const g=m.k==='mine'?propModel('landmine',m.x,m.z,.75,.2,.75,0,0,true):propModel('beartrap_open',m.x,m.z,.9,.2,1.05,0,0,true);TRAPS.push({kind:m.k,g,x:m.x,z:m.z,arm:1,done:false,t:0,owner:'net:'+from});break}
+  case 'tg':{const i=TRAPS.findIndex(t=>!t.done&&Math.abs(t.x-m.x)<.01&&Math.abs(t.z-m.z)<.01);if(i>=0)trapFire(TRAPS[i],i,null);break}
+  case 'die':{if(q)q.alive=false;const vic=q?q.name:'Pemain';
+    if(m.by===NET.id){P.kills++;P.money=Math.min(16000,P.money+300);feed('Kamu ➜ '+vic+(m.l?' ['+m.l+']':''));SFX.hit(true)}
+    else feed((m.bn||'?')+' ➜ '+vic);updateHUD();break}
+  case 'kf':if(m.k===NET.id){P.kills++;P.money=Math.min(16000,P.money+m.m);feed('Kamu ➜ '+m.v+' ['+m.l+']'+(m.h?' (headshot)':''));updateHUD()}else feed(m.kn+' ➜ '+m.v+' ['+m.l+']'+(m.h?' (headshot)':''));break;
+  case 'hit':if(q&&hostile('net:'+from))hurtPlayer(m.d*(P.armor>0?1:1),{name:q.name,pos:q.pos.clone(),by:'net:'+from,label:m.l});break;
+  case 'dmg':hurtPlayer(m.d,{name:m.n,pos:new THREE.Vector3(m.x,1.6,m.z)});break;
+  case 'hb':if(NET.host){const b=bots[m.i];if(b)damageBot(b,m.d,!!m.h,'net:'+from,m.l)}break;
+  case 'plant':if(NET.host&&R.phase==='play')plantBomb(m.x,m.z);break;
+  case 'defuse':if(NET.host&&R.phase==='play'&&R.bomb){R.bomb.defused=true;endRound(false,'Bom berhasil dijinakkan')}break;
+  case 'start':netStartClient(m);break;
+  case 'sn':bots.forEach((b,i)=>b.ns=m.b[i]);if(R.phase==='play'){R.time=m.tm;R.buyTime=m.by;if(m.bm){if(!R.bomb)plantBomb(m.bm[0],m.bm[1]);R.bomb.t=m.bm[2]}}break;
+  case 'end':endRound(m.w,m.why,{sc:m.sc});break;
+  case 'over':R.score=m.sc;R.phase='end';gameOver();break;
+  }}catch(e){console.error('net',m.t,e)}finally{NET.rx=false}}
+
+// ---- lobby / transport
+function lobbyBroadcast(){const list=[{id:NET.id,name:CFG.name,char:CFG.char||'soldier',team:NET.team}];for(const id in NET.pl){const q=NET.pl[id];list.push({id,name:q.name,char:q.char,team:q.team})}
+  netSend({t:'lobby',mode:NET.mode,list});netUI()}
+function linkOf(c){return {send:m=>{try{if(c.open)c.send(m)}catch(e){}},close:()=>{try{c.close()}catch(e){}}}}
+function drop(id){const q=NET.pl[id];if(!q)return;removeAvatar(q);delete NET.pl[id];delete NET.links[id];feed(q.name+' keluar');lobbyBroadcast()}
+function netHost(){netLeave(true);const code=genCode();NET.host=true;NET.id='host';NET.team='T';mpStat('Membuat room…');
+  const ready=()=>{NET.on=true;NET.code=code;lobbyBroadcast();mpStat('Kode room: <span class="code">'+code+'</span><br>Bagikan kode ini ke teman, lalu tekan MULAI')};
+  if(NET.local){const bc=new BroadcastChannel('szl-'+code);NET.bc=bc;bc.onmessage=e=>{const m=e.data;if(m.to!=='host')return;
+      if(m.k==='hi'){NET.links[m.from]={send:d=>bc.postMessage({to:m.from,d})};return}if(m.k==='bye'){drop(m.from);return}if(m.d)hostRx(m.from,m.d)};ready();return}
+  if(!window.Peer){mpStat('Library jaringan gagal dimuat — periksa koneksi internet');return}
+  const peer=new Peer('strikezone-'+code,{debug:1});NET.peer=peer;
+  peer.on('open',ready);
+  peer.on('connection',c=>{c.on('open',()=>{NET.links[c.peer]=linkOf(c)});c.on('data',d=>hostRx(c.peer,d));c.on('close',()=>drop(c.peer));c.on('error',()=>drop(c.peer))});
+  peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
+  peer.on('error',e=>{if(e.type==='unavailable-id'){netHost()}else if(e.type!=='peer-unavailable')mpStat('Gagal: '+e.type+' — coba lagi')})}
+function netJoin(code){code=(code||'').toUpperCase().trim();if(code.length<4){mpStat('Masukkan kode room dari temanmu');return}
+  netLeave(true);NET.host=false;mpStat('Menghubungkan ke room '+code+'…');initAudio();
+  const joined=()=>{NET.on=true;NET.code=code;NET.link.send({t:'hello',n:CFG.name,c:CFG.char||'soldier',f:NET.id});clearTimeout(NET.jt);mpStat('✅ Terhubung ke room <b>'+code+'</b> — menunggu host menekan MULAI');netUI()};
+  NET.jt=setTimeout(()=>{if(!NET.on)mpStat('Tidak bisa terhubung. Pastikan kode benar & host masih di menu room. (Jaringan seluler kadang memblokir — coba Wi-Fi)')},15000);
+  if(NET.local){const bc=new BroadcastChannel('szl-'+code),id='p'+Math.random().toString(36).slice(2,8);NET.bc=bc;NET.id=id;
+    bc.onmessage=e=>{const m=e.data;if(m.to===id&&m.d)clientRx(m.d)};NET.link={send:d=>bc.postMessage({to:'host',from:id,d})};bc.postMessage({to:'host',from:id,k:'hi'});joined();return}
+  if(!window.Peer){mpStat('Library jaringan gagal dimuat — periksa koneksi internet');return}
+  const peer=new Peer({debug:1});NET.peer=peer;
+  peer.on('open',id=>{NET.id=id;const c=peer.connect('strikezone-'+code,{reliable:true,serialization:'json'});
+    c.on('open',()=>{NET.link=linkOf(c);joined()});c.on('data',clientRx);c.on('close',hostLost);c.on('error',hostLost)});
+  peer.on('error',e=>mpStat(e.type==='peer-unavailable'?'❌ Room '+code+' tidak ditemukan':'Gagal: '+e.type))}
+function hostLost(){if(!NET.on)return;netLeave();flashMsg('Koneksi ke host terputus',4);if(R.phase!=='menu'){clearTimeout(R.timer);R.phase='end';gameOver();$('menu').querySelector('h1').textContent='KONEKSI TERPUTUS'}mpStat('Koneksi ke host terputus')}
+function netLeave(keepMode){if(NET.bc){if(!NET.host)try{NET.bc.postMessage({to:'host',from:NET.id,k:'bye'})}catch(e){}NET.bc.close();NET.bc=null}
+  if(NET.peer){try{NET.peer.destroy()}catch(e){}NET.peer=null}
+  for(const id in NET.pl)removeAvatar(NET.pl[id]);NET.pl={};NET.links={};NET.link=null;NET.on=false;NET.host=false;NET.team='T';NET.id='';netUI()}
+addEventListener('pagehide',()=>{if(NET.on)netLeave()});
+
+// ---- lobby UI
+if(!CFG.name)CFG.name='Pemain'+Math.floor(10+Math.random()*90);
+$('mpName').value=CFG.name;$('mpName').oninput=e=>{CFG.name=e.target.value.trim().slice(0,12)||'Pemain';saveCfg()};
+function netUI(){const mb=$('modeBtns');if(!mb)return;mb.innerHTML='';
+  for(const [k,l] of [['solo','🎯 Solo'],['coop','🤝 Co-op'],['pvp','⚔️ PvP']]){const b=document.createElement('button');b.className='btn mpb';b.textContent=l;
+    if(NET.mode===k)b.style.cssText='background:#f0c050;color:#1a1a10';b.disabled=NET.on&&NET.mode!==k;b.onclick=()=>{NET.mode=k;netUI()};mb.appendChild(b)}
+  $('mpBox').classList.toggle('hide',NET.mode==='solo');
+  $('mpCreate').classList.toggle('hide',NET.on);$('mpJoin').parentNode.classList.toggle('hide',NET.on);$('mpLeave').classList.toggle('hide',!NET.on);$('mpName').disabled=NET.on;
+  const L=$('mpList');L.innerHTML='';
+  if(NET.on){const all=[{name:CFG.name+' (kamu)',team:NET.team,host:NET.host}].concat(Object.values(NET.pl).map(q=>({name:q.name,team:q.team,host:q.id==='host'})));
+    for(const p of all){const s=document.createElement('span');s.className='t'+p.team;s.textContent=(p.host?'👑 ':'')+p.name+(NET.mode==='pvp'?(p.team==='T'?' · Penyerang':' · Penjaga'):'');L.appendChild(s)}}
+  const st=$('start');st.classList.toggle('wait',NET.mode!=='solo'&&(!NET.on||!NET.host));
+  st.textContent=NET.mode==='solo'?(R.round||$('menu').querySelector('h1').textContent!=='STRIKE ZONE'?'MAIN LAGI':'MULAI'):!NET.on?'BUAT / GABUNG ROOM DULU':NET.host?'▶ MULAI ('+(1+Object.keys(NET.pl).length)+' pemain)':'MENUNGGU HOST…';
+  $('gameSet').style.opacity=netClient()?.4:1}
+$('mpCreate').onclick=()=>{initAudio();netHost()};
+$('mpJoin').onclick=()=>netJoin($('mpCode').value);
+$('mpCode').onkeydown=e=>{if(e.key==='Enter')netJoin($('mpCode').value);e.stopPropagation()};$('mpName').onkeydown=e=>e.stopPropagation();
+$('mpLeave').onclick=()=>{netLeave();mpStat('')};
+for(const id of ['mpCreate','mpJoin','mpLeave'])$(id).addEventListener('touchend',e=>{e.preventDefault();$(id).onclick()},{passive:false});
+netUI();
+
 </script>
 </body>
 </html>

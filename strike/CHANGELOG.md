@@ -3,6 +3,20 @@
 Semua perubahan penting pada game Strike Zone dicatat di sini.
 Game: https://zenaki.github.io/Doodle-Shooter/strike/
 
+## v1.20 — 24 Okt 2026
+### Ditambahkan
+- **Multiplayer online (peer-to-peer):** pilih mode **🤝 Co-op** atau **⚔️ PvP** di menu awal. Satu pemain menekan **Buat Room** dan membagikan kode 5 huruf, pemain lain memasukkan kode lalu **Gabung**. Tidak perlu server: HP saling terhubung langsung (WebRTC via PeerJS), dengan relay otomatis bila jaringan memblokir koneksi langsung.
+  - **Co-op:** semua pemain menjadi Penyerang melawan bot Penjaga. Jumlah bot bertambah sesuai jumlah pemain. Ronde kalah bila semua pemain tewas.
+  - **PvP:** pemain dibagi otomatis ke tim Penyerang dan Penjaga. Penjaga bisa **menjinakkan bom** (tahan E / tombol BOM di dekat bom selama 5 detik). Tembakan, pisau, granat, roket, dan api melukai lawan; teman setim tidak bisa saling melukai.
+  - Host menjadi penentu: bot, ronde, waktu, bom, dan skor dijalankan di HP host lalu disinkronkan ke pemain lain.
+  - Pemain lain tampil sebagai karakter 3D beranimasi pilihan mereka, lengkap dengan nama di atas kepala (teman setim) dan di peta.
+  - Tembakan, tracer, granat, ledakan, tong, kotak P3K, ranjau, dan jebakan tersinkron ke semua pemain. Kill feed menampilkan siapa membunuh siapa.
+  - Saat tewas, kamera mengikuti teman setim yang masih hidup (tap/klik untuk berganti) sampai ronde berikutnya.
+  - Pemain bisa bergabung di tengah pertandingan dan ikut bermain mulai ronde berikutnya.
+### Catatan
+- Disarankan 2–4 pemain. Bila host keluar, pertandingan berakhir untuk semua pemain.
+- Tombol RESET dan pengaturan musuh/kesulitan hanya bisa diubah oleh host.
+
 ## v1.19 — 24 Okt 2026
 ### Ditambahkan
 - **Replay kini merekam tembakan dan ledakan**: setiap tembakan digambar sebagai garis tebal dari penembak ke titik kena (hijau = tembakanmu, merah = musuh) dengan kilat laras dan titik dampak, plus peluru melesat. Ledakan granat/roket/tong, area api, dan granat/roket yang sedang terbang juga diputar ulang, lengkap dengan suara ledakan.

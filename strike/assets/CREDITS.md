@@ -26,3 +26,6 @@ Semua aset pihak ketiga di folder ini berlisensi **CC0 1.0 (Public Domain)**. At
 
 ## Kode pihak ketiga (`../lib/`)
 - `GLTFLoader.js` dan `SkeletonUtils.js` dari three.js r128 — MIT License, © three.js authors.
+
+## Library
+- **PeerJS 1.5.4** (`lib/peerjs.min.js`) — MIT License, © Michelle Bu & Eric Zhang. Koneksi WebRTC peer-to-peer & server signaling gratis peerjs.com.
