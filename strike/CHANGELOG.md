@@ -3,6 +3,19 @@
 Semua perubahan penting pada game Strike Zone dicatat di sini.
 Game: https://zenaki.github.io/Doodle-Shooter/strike/
 
+## v1.23 — 24 Okt 2026
+### Ditambahkan
+- **Pilihan map** di menu awal (dengan pratinjau denah, dan latar menu langsung berganti ke map yang dipilih):
+  - 🏜️ **Gurun Klasik** — map lama.
+  - 🏙️ **Kota Kecil** — jalan bersilang di antara blok gedung tinggi, gang sempit, mobil rusak, lampu jalan, cone; zona bom di plaza utara.
+  - 📦 **Pelabuhan Kontainer** — labirin kontainer (sebagian ditumpuk 2 tingkat) dengan **dua zona bom, A dan B**; tepi dermaga di utara.
+  - 🏜️ **Gurun Terbuka** — area lapang untuk sniper/roket: batu besar, tank, mobil rusak, karung pasir, reruntuhan pos di zona A; jarak pandang jauh.
+  - 🏭 **Pabrik** — 9 ruangan beton dengan pintu, pilar, mesin, banyak tong meledak, pencahayaan redup; jarak dekat.
+  - 🌲 **Taman** — rumput, pagar tanaman sebagai perlindungan, banyak pohon, sungai yang hanya bisa diseberangi lewat dua jembatan (peluru tetap bisa melintas), gazebo di zona A.
+  - 🎲 **Acak tiap ronde** — map berganti otomatis setiap ronde.
+- Peta (M), titik muncul, jalur patroli & pencarian jalan bot menyesuaikan setiap map. Opsi tembok hancur berlaku di semua map.
+- Di Co-op/PvP, map mengikuti pilihan host dan otomatis dimuat di HP semua pemain.
+
 ## v1.22 — 24 Okt 2026
 ### Diperbaiki
 - Pesan "Gyro: sensor tidak mengirim data" muncul di mode solo (regresi v1.21). Izin sensor kini hanya diminta sekali walau beberapa sentuhan terjadi bersamaan; sebelumnya permintaan ganda membuat iPhone menolak izin.
